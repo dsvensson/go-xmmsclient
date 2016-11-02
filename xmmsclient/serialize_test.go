@@ -2,9 +2,16 @@ package xmmsclient
 
 import (
 	"bytes"
+	"encoding/hex"
 	"reflect"
 	"testing"
 )
+
+func checkBuffer(t *testing.T, expected []byte, actual []byte) {
+	if !reflect.DeepEqual(expected, actual) {
+		t.Fatalf("\nwant:\n%s\nhave:\n%s", hex.Dump(expected), hex.Dump(actual))
+	}
+}
 
 func TestSerializeInt(t *testing.T) {
 	var expected = []byte{
@@ -15,10 +22,8 @@ func TestSerializeInt(t *testing.T) {
 
 	var err = SerializeXmmsValue(XmmsInt(42), &buffer)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
-	if !reflect.DeepEqual(expected, buffer.Bytes()) {
-		t.Errorf("\n\twant %+v\n\thave %+v", expected, buffer.Bytes())
-	}
+	checkBuffer(t, expected, buffer.Bytes())
 }
