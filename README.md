@@ -11,6 +11,6 @@ A first exploration of the Go programming language with a target of implementing
 * How to deal with the highly dynamic API of `xmmsc_medialib_query`.
 * What is idiomatic Go-esque style?
  * Naming things
- * Package separation
+ * Package separation (WiP)
  * File separation
 * Testing, coverage
