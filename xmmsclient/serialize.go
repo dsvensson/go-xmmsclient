@@ -5,49 +5,95 @@ import (
 	"encoding/binary"
 )
 
-func serializeInt(i XmmsInt, buffer *bytes.Buffer) {
-	binary.Write(buffer, binary.BigEndian, i)
+func serializeInt(i XmmsInt, buffer *bytes.Buffer) (err error) {
+	err = binary.Write(buffer, binary.BigEndian, i)
+	return
 }
 
-func serializeString(s XmmsString, buffer *bytes.Buffer) {
-	binary.Write(buffer, binary.BigEndian, uint32(len(s)+1))
-	binary.Write(buffer, binary.BigEndian, []byte(s))
-	binary.Write(buffer, binary.BigEndian, byte(0))
+func serializeString(s XmmsString, buffer *bytes.Buffer) (err error) {
+	err = binary.Write(buffer, binary.BigEndian, uint32(len(s)+1))
+	if err != nil {
+		return
+	}
+
+	err = binary.Write(buffer, binary.BigEndian, []byte(s))
+	if err != nil {
+		return
+	}
+
+	err = binary.Write(buffer, binary.BigEndian, byte(0))
+	if err != nil {
+		return
+	}
+
+	return
 }
 
-func serializeList(l XmmsList, buffer *bytes.Buffer) {
-	binary.Write(buffer, binary.BigEndian, l.Restrict)
-	binary.Write(buffer, binary.BigEndian, uint32(len(l.Entries)))
+func serializeList(l XmmsList, buffer *bytes.Buffer) (err error) {
+	err = binary.Write(buffer, binary.BigEndian, l.Restrict)
+	if err != nil {
+		return
+	}
+
+	err = binary.Write(buffer, binary.BigEndian, uint32(len(l.Entries)))
+	if err != nil {
+		return
+	}
+
 	if l.Restrict != TypeNone {
 		// TODO: serialize restricted types
 	} else {
 		for _, entry := range l.Entries {
-			SerializeXmmsValue(entry, buffer)
+			err = SerializeXmmsValue(entry, buffer)
+			if err != nil {
+				return
+			}
 		}
 	}
+
+	return
 }
 
-func serializeDict(dict XmmsDict, buffer *bytes.Buffer) {
-	binary.Write(buffer, binary.BigEndian, uint32(len(dict)))
+func serializeDict(dict XmmsDict, buffer *bytes.Buffer) (err error) {
+	err = binary.Write(buffer, binary.BigEndian, uint32(len(dict)))
+	if err != nil {
+		return
+	}
+
 	for k, v := range dict {
-		serializeString(XmmsString(k), buffer)
+		err = serializeString(XmmsString(k), buffer)
+		if err != nil {
+			return
+		}
+
 		SerializeXmmsValue(v, buffer)
 	}
+
+	return
 }
 
-func SerializeXmmsValue(value XmmsValue, buffer *bytes.Buffer) {
+func SerializeXmmsValue(value XmmsValue, buffer *bytes.Buffer) (err error) {
 	switch value.(type) {
 	case XmmsInt:
-		binary.Write(buffer, binary.BigEndian, TypeInt64)
-		serializeInt(value.(XmmsInt), buffer)
+		err = binary.Write(buffer, binary.BigEndian, TypeInt64)
+		if err == nil {
+			serializeInt(value.(XmmsInt), buffer)
+		}
 	case XmmsString:
-		binary.Write(buffer, binary.BigEndian, TypeString)
-		serializeString(value.(XmmsString), buffer)
+		err = binary.Write(buffer, binary.BigEndian, TypeString)
+		if err == nil {
+			serializeString(value.(XmmsString), buffer)
+		}
 	case XmmsDict:
-		binary.Write(buffer, binary.BigEndian, TypeDict)
-		serializeDict(value.(XmmsDict), buffer)
+		err = binary.Write(buffer, binary.BigEndian, TypeDict)
+		if err == nil {
+			serializeDict(value.(XmmsDict), buffer)
+		}
 	case XmmsList:
-		binary.Write(buffer, binary.BigEndian, TypeList)
-		serializeList(value.(XmmsList), buffer)
+		err = binary.Write(buffer, binary.BigEndian, TypeList)
+		if err == nil {
+			serializeList(value.(XmmsList), buffer)
+		}
 	}
+	return
 }
