@@ -4,12 +4,9 @@ A first exploration of the Go programming language with a target of implementing
 
 ## Stuff to figure out
 
-* How to drive the networking
- * sync/async calls
- * repeating server side event driven broadcasts (skip signals?)
 * go generate the whole API from [ipc.xml](https://github.com/xmms2/xmms2-devel/blob/master/src/ipc.xml)
 * How to deal with the highly dynamic API of `xmmsc_medialib_query`.
 * What is idiomatic Go-esque style?
  * Naming things
- * Package separation (WiP)
- * File separation
+* Explore memory management.
+* Implement the ideas from the chaotic example client in the library.
