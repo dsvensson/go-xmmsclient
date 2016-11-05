@@ -12,6 +12,7 @@ import (
 type context struct {
 	result     chan XmmsValue
 	sequenceNr uint32
+	broadcast  bool
 }
 
 type message struct {
@@ -146,8 +147,11 @@ func (c *Client) router() {
 		case ctx := <-c.registry:
 			registry[ctx.sequenceNr] = ctx
 		case reply := <-c.inbound:
-			registry[reply.sequenceNr].result <- reply.value
-			delete(registry, reply.sequenceNr)
+			ctx := registry[reply.sequenceNr]
+			ctx.result <- reply.value
+			if !ctx.broadcast {
+				delete(registry, ctx.sequenceNr)
+			}
 		}
 	}
 }
