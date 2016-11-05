@@ -15,6 +15,13 @@ type context struct {
 	broadcast  bool
 }
 
+type header struct {
+	objectId   uint32
+	commandId  uint32
+	sequenceNr uint32
+	length     uint32
+}
+
 type message struct {
 	objectId  uint32
 	commandId uint32
@@ -37,46 +44,47 @@ type Client struct {
 	registry chan context
 }
 
-func parseHeader(header *bytes.Buffer) (objId uint32, cmdId uint32, sequenceNr uint32, length uint32, err error) {
-	err = binary.Read(header, binary.BigEndian, &objId)
+func parseHeader(buf *bytes.Buffer) (hdr header, err error) {
+	err = binary.Read(buf, binary.BigEndian, &hdr.objectId)
 	if err != nil {
 		return
 	}
 
-	err = binary.Read(header, binary.BigEndian, &cmdId)
+	err = binary.Read(buf, binary.BigEndian, &hdr.commandId)
 	if err != nil {
 		return
 	}
 
-	err = binary.Read(header, binary.BigEndian, &sequenceNr)
+	err = binary.Read(buf, binary.BigEndian, &hdr.sequenceNr)
 	if err != nil {
 		return
 	}
 
-	err = binary.Read(header, binary.BigEndian, &length)
+	err = binary.Read(buf, binary.BigEndian, &hdr.length)
 	if err != nil {
 		return
 	}
+
 	return
 }
 
-func writeHeader(w io.ReadWriteCloser, msg message, length uint32) (err error) {
-	err = binary.Write(w, binary.BigEndian, msg.objectId)
+func writeHeader(w io.ReadWriteCloser, hdr *header) (err error) {
+	err = binary.Write(w, binary.BigEndian, hdr.objectId)
 	if err != nil {
 		return
 	}
 
-	err = binary.Write(w, binary.BigEndian, msg.commandId)
+	err = binary.Write(w, binary.BigEndian, hdr.commandId)
 	if err != nil {
 		return
 	}
 
-	err = binary.Write(w, binary.BigEndian, msg.context.sequenceNr)
+	err = binary.Write(w, binary.BigEndian, hdr.sequenceNr)
 	if err != nil {
 		return
 	}
 
-	err = binary.Write(w, binary.BigEndian, length)
+	err = binary.Write(w, binary.BigEndian, hdr.length)
 	if err != nil {
 		return
 	}
@@ -90,26 +98,26 @@ func (c *Client) nextSequenceNr() (sequenceNr uint32) {
 }
 
 func (c *Client) reader() {
-	var header = make([]byte, 16)
+	var buffer = make([]byte, 16)
 	for {
-		read, err := io.ReadFull(c.conn, header)
+		read, err := io.ReadFull(c.conn, buffer)
 		if err != nil {
 			// TODO: Post to error channel
 			fmt.Println("error reading socket")
 			continue
 		}
 
-		if read != len(header) {
+		if read != len(buffer) {
 			fmt.Println("nothing to read")
 			continue
 		}
 
-		_, _, sequenceNr, length, err := parseHeader(bytes.NewBuffer(header))
+		header, err := parseHeader(bytes.NewBuffer(buffer))
 
-		payload := make([]byte, length)
+		payload := make([]byte, header.length)
 		c.conn.Read(payload)
 		value, _ := DeserializeXmmsValue(bytes.NewBuffer(payload))
-		c.inbound <- reply{sequenceNr, value}
+		c.inbound <- reply{header.sequenceNr, value}
 	}
 }
 
@@ -126,7 +134,14 @@ func (c *Client) writer() {
 				continue
 			}
 
-			err = writeHeader(c.conn, msg, uint32(len(payload.Bytes())))
+			header := header{
+				objectId:   msg.objectId,
+				commandId:  msg.commandId,
+				sequenceNr: msg.context.sequenceNr,
+				length:     uint32(len(payload.Bytes())),
+			}
+
+			err = writeHeader(c.conn, &header)
 			if err != nil {
 				continue
 			}
