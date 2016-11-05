@@ -123,34 +123,31 @@ func (c *Client) reader() {
 }
 
 func (c *Client) writer() {
-	for {
-		select {
-		case msg := <-c.outbound:
-			var payload bytes.Buffer
+	for msg := range c.outbound {
+		var payload bytes.Buffer
 
-			c.registry <- msg.context
+		c.registry <- msg.context
 
-			err := SerializeXmmsValue(msg.args, &payload)
-			if err != nil {
-				continue
-			}
+		err := SerializeXmmsValue(msg.args, &payload)
+		if err != nil {
+			continue
+		}
 
-			header := header{
-				objectId:   msg.objectId,
-				commandId:  msg.commandId,
-				sequenceNr: msg.context.sequenceNr,
-				length:     uint32(len(payload.Bytes())),
-			}
+		header := header{
+			objectId:   msg.objectId,
+			commandId:  msg.commandId,
+			sequenceNr: msg.context.sequenceNr,
+			length:     uint32(len(payload.Bytes())),
+		}
 
-			err = writeHeader(c.conn, &header)
-			if err != nil {
-				continue
-			}
+		err = writeHeader(c.conn, &header)
+		if err != nil {
+			continue
+		}
 
-			payload.WriteTo(c.conn)
-			if err != nil {
-				continue
-			}
+		payload.WriteTo(c.conn)
+		if err != nil {
+			continue
 		}
 	}
 }
