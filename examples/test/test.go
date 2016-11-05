@@ -14,7 +14,9 @@ func RepeatSomething(c *xmmsclient.Client) {
 }
 
 func main() {
-	client, _ := xmmsclient.Dial("localhost:xmms2", "hello-from-go")
+	client := xmmsclient.NewClient("hello-from-go")
+
+	client.Dial("localhost:xmms2")
 
 	go RepeatSomething(client)
 

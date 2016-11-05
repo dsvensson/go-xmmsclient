@@ -3,6 +3,7 @@ package xmmsclient
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -37,7 +38,8 @@ type reply struct {
 type Client struct {
 	conn       io.ReadWriteCloser
 	sequenceNr uint32
-	clientId   XmmsValue // TODO: uint32
+	clientName string
+	clientId   int64
 
 	inbound  chan reply
 	outbound chan message
@@ -184,7 +186,7 @@ func (c *Client) dispatch(objectId uint32, commandId uint32, args XmmsValue) cha
 }
 
 // TODO: Needs a better home, should be generated.
-func (c *Client) MainHello(client_name string) XmmsValue {
+func (c *Client) mainHello(client_name string) XmmsValue {
 	return <-c.dispatch(
 		ObjectMain, CommandMainHello,
 		NewXmmsList(XmmsInt(IpcVersion), XmmsString(client_name)),
@@ -199,30 +201,42 @@ func (c *Client) MainListPlugins() XmmsValue {
 	)
 }
 
-// TODO: Probably something else that creates a new Client rather than Dial.
-func Dial(url string, name string) (*Client, error) {
+func (c *Client) Dial(url string) error {
 	addr, err := net.ResolveTCPAddr("tcp", url)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	conn, err := net.DialTCP("tcp", nil, addr)
+	c.conn, err = net.DialTCP("tcp", nil, addr)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
+	c.inbound = make(chan reply)
+	c.outbound = make(chan message)
+	c.registry = make(chan context)
+
+	go c.router()
+	go c.reader()
+	go c.writer()
+
+	c.clientId = int64(c.mainHello(c.clientName).(XmmsInt)) // TODO: err
+
+	return nil
+}
+
+func (c *Client) ClientId() (int64, error) {
+	if c.clientId == -1 {
+		return -1, errors.New("Client Id not initialized.")
+	}
+	return int64(c.clientId), nil
+}
+
+func NewClient(name string) *Client {
 	client := Client{
-		conn:     conn,
-		inbound:  make(chan reply),
-		outbound: make(chan message),
-		registry: make(chan context),
+		clientId:   -1,
+		clientName: name,
 	}
 
-	go client.router()
-	go client.reader()
-	go client.writer()
-
-	client.clientId = client.MainHello(name)
-
-	return &client, nil
+	return &client
 }
