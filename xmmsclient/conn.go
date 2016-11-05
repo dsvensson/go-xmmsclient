@@ -59,6 +59,30 @@ func parseHeader(header *bytes.Buffer) (objId uint32, cmdId uint32, sequenceNr u
 	return
 }
 
+func writeHeader(w io.ReadWriteCloser, msg message, length uint32) (err error) {
+	err = binary.Write(w, binary.BigEndian, msg.objectId)
+	if err != nil {
+		return
+	}
+
+	err = binary.Write(w, binary.BigEndian, msg.commandId)
+	if err != nil {
+		return
+	}
+
+	err = binary.Write(w, binary.BigEndian, msg.context.sequenceNr)
+	if err != nil {
+		return
+	}
+
+	err = binary.Write(w, binary.BigEndian, length)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
 func (c *Client) nextSequenceNr() (sequenceNr uint32) {
 	sequenceNr = atomic.AddUint32(&c.sequenceNr, 1)
 	return
@@ -100,22 +124,12 @@ func (c *Client) writer() {
 			if err != nil {
 				continue
 			}
-			binary.Write(c.conn, binary.BigEndian, msg.objectId)
+
+			err = writeHeader(c.conn, msg, uint32(len(payload.Bytes())))
 			if err != nil {
 				continue
 			}
-			binary.Write(c.conn, binary.BigEndian, msg.commandId)
-			if err != nil {
-				continue
-			}
-			binary.Write(c.conn, binary.BigEndian, msg.context.sequenceNr)
-			if err != nil {
-				continue
-			}
-			binary.Write(c.conn, binary.BigEndian, uint32(len(payload.Bytes())))
-			if err != nil {
-				continue
-			}
+
 			payload.WriteTo(c.conn)
 			if err != nil {
 				continue
@@ -164,7 +178,7 @@ func (c *Client) MainListPlugins() XmmsValue {
 }
 
 // TODO: Probably something else that creates a new Client rather than Dial.
-func Dial(url string) (client Client, err error) {
+func Dial(url string, name string) (client Client, err error) {
 	addr, err := net.ResolveTCPAddr("tcp", url)
 	if err != nil {
 		return
@@ -176,18 +190,17 @@ func Dial(url string) (client Client, err error) {
 	}
 
 	client = Client{
-		conn: conn,
+		conn:     conn,
+		inbound:  make(chan reply),
+		outbound: make(chan message),
+		registry: make(chan context),
 	}
-
-	client.inbound = make(chan reply)
-	client.outbound = make(chan message)
-	client.registry = make(chan context)
 
 	go client.router()
 	go client.reader()
 	go client.writer()
 
-	client.clientId = client.MainHello("hello-from-go")
+	client.clientId = client.MainHello(name)
 
 	return
 }

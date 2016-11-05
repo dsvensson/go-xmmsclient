@@ -9,4 +9,3 @@ A first exploration of the Go programming language with a target of implementing
 * What is idiomatic Go-esque style?
  * Naming things
 * Explore memory management.
-* Implement the ideas from the chaotic example client in the library.
