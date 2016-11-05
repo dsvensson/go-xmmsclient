@@ -147,6 +147,7 @@ func (c *Client) router() {
 			registry[ctx.sequenceNr] = ctx
 		case reply := <-c.inbound:
 			registry[reply.sequenceNr].result <- reply.value
+			delete(registry, reply.sequenceNr)
 		}
 	}
 }
