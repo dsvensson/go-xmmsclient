@@ -4,6 +4,7 @@ type XmmsValue interface {
 	isXmmsValue()
 }
 type XmmsInt int64
+type XmmsError string
 type XmmsString string
 type XmmsDict map[string]XmmsValue
 type XmmsList struct {
@@ -12,6 +13,8 @@ type XmmsList struct {
 }
 
 func (i XmmsInt) isXmmsValue() {}
+
+func (s XmmsError) isXmmsValue() {}
 
 func (s XmmsString) isXmmsValue() {}
 

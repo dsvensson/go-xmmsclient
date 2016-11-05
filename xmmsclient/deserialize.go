@@ -10,7 +10,7 @@ func deserializeInt(buffer *bytes.Buffer) (value XmmsInt, err error) {
 	return
 }
 
-func deserializeString(buffer *bytes.Buffer) (value XmmsString, err error) {
+func deserializeRawString(buffer *bytes.Buffer) (value string, err error) {
 	var length uint32
 	err = binary.Read(buffer, binary.BigEndian, &length)
 	if err != nil {
@@ -21,7 +21,23 @@ func deserializeString(buffer *bytes.Buffer) (value XmmsString, err error) {
 	if err != nil {
 		return
 	}
-	value = XmmsString(data)
+	value = string(data)
+	return
+}
+
+func deserializeString(buffer *bytes.Buffer) (value XmmsString, err error) {
+	data, err := deserializeRawString(buffer)
+	if err == nil {
+		value = XmmsString(data)
+	}
+	return
+}
+
+func deserializeError(buffer *bytes.Buffer) (value XmmsError, err error) {
+	data, err := deserializeRawString(buffer)
+	if err == nil {
+		value = XmmsError(data)
+	}
 	return
 }
 
@@ -78,6 +94,8 @@ func DeserializeXmmsValue(buffer *bytes.Buffer) (result XmmsValue, err error) {
 	switch valueType {
 	case TypeInt64:
 		result, err = deserializeInt(buffer)
+	case TypeError:
+		result, err = deserializeError(buffer)
 	case TypeString:
 		result, err = deserializeString(buffer)
 	case TypeList:
