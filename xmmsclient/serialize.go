@@ -5,39 +5,38 @@ import (
 	"encoding/binary"
 )
 
-func serializeInt(i XmmsInt, buffer *bytes.Buffer) (err error) {
-	err = binary.Write(buffer, binary.BigEndian, i)
-	return
+func serializeInt(i XmmsInt, buffer *bytes.Buffer) error {
+	return binary.Write(buffer, binary.BigEndian, i)
 }
 
-func serializeString(s XmmsString, buffer *bytes.Buffer) (err error) {
-	err = binary.Write(buffer, binary.BigEndian, uint32(len(s)+1))
+func serializeString(s XmmsString, buffer *bytes.Buffer) error {
+	err := binary.Write(buffer, binary.BigEndian, uint32(len(s)+1))
 	if err != nil {
-		return
+		return err
 	}
 
 	err = binary.Write(buffer, binary.BigEndian, []byte(s))
 	if err != nil {
-		return
+		return err
 	}
 
 	err = binary.Write(buffer, binary.BigEndian, byte(0))
 	if err != nil {
-		return
+		return err
 	}
 
-	return
+	return nil
 }
 
-func serializeList(l XmmsList, buffer *bytes.Buffer) (err error) {
-	err = binary.Write(buffer, binary.BigEndian, l.Restrict)
+func serializeList(l XmmsList, buffer *bytes.Buffer) error {
+	err := binary.Write(buffer, binary.BigEndian, l.Restrict)
 	if err != nil {
-		return
+		return err
 	}
 
 	err = binary.Write(buffer, binary.BigEndian, uint32(len(l.Entries)))
 	if err != nil {
-		return
+		return err
 	}
 
 	if l.Restrict != TypeNone {
@@ -46,30 +45,33 @@ func serializeList(l XmmsList, buffer *bytes.Buffer) (err error) {
 		for _, entry := range l.Entries {
 			err = SerializeXmmsValue(entry, buffer)
 			if err != nil {
-				return
+				return err
 			}
 		}
 	}
 
-	return
+	return nil
 }
 
-func serializeDict(dict XmmsDict, buffer *bytes.Buffer) (err error) {
-	err = binary.Write(buffer, binary.BigEndian, uint32(len(dict)))
+func serializeDict(dict XmmsDict, buffer *bytes.Buffer) error {
+	err := binary.Write(buffer, binary.BigEndian, uint32(len(dict)))
 	if err != nil {
-		return
+		return err
 	}
 
 	for k, v := range dict {
 		err = serializeString(XmmsString(k), buffer)
 		if err != nil {
-			return
+			return err
 		}
 
-		SerializeXmmsValue(v, buffer)
+		err = SerializeXmmsValue(v, buffer)
+		if err != nil {
+			return err
+		}
 	}
 
-	return
+	return nil
 }
 
 func SerializeXmmsValue(value XmmsValue, buffer *bytes.Buffer) (err error) {
@@ -95,5 +97,5 @@ func SerializeXmmsValue(value XmmsValue, buffer *bytes.Buffer) (err error) {
 			serializeList(value.(XmmsList), buffer)
 		}
 	}
-	return
+	return nil
 }

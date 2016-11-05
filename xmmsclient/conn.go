@@ -44,57 +44,58 @@ type Client struct {
 	registry chan context
 }
 
-func parseHeader(buf *bytes.Buffer) (hdr header, err error) {
-	err = binary.Read(buf, binary.BigEndian, &hdr.objectId)
+func parseHeader(buf *bytes.Buffer) (*header, error) {
+	var hdr header
+
+	err := binary.Read(buf, binary.BigEndian, &hdr.objectId)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	err = binary.Read(buf, binary.BigEndian, &hdr.commandId)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	err = binary.Read(buf, binary.BigEndian, &hdr.sequenceNr)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	err = binary.Read(buf, binary.BigEndian, &hdr.length)
 	if err != nil {
-		return
+		return nil, err
 	}
 
-	return
+	return &hdr, nil
 }
 
-func writeHeader(w io.ReadWriteCloser, hdr *header) (err error) {
-	err = binary.Write(w, binary.BigEndian, hdr.objectId)
+func writeHeader(w io.ReadWriteCloser, hdr *header) error {
+	err := binary.Write(w, binary.BigEndian, hdr.objectId)
 	if err != nil {
-		return
+		return err
 	}
 
 	err = binary.Write(w, binary.BigEndian, hdr.commandId)
 	if err != nil {
-		return
+		return err
 	}
 
 	err = binary.Write(w, binary.BigEndian, hdr.sequenceNr)
 	if err != nil {
-		return
+		return err
 	}
 
 	err = binary.Write(w, binary.BigEndian, hdr.length)
 	if err != nil {
-		return
+		return err
 	}
 
-	return
+	return nil
 }
 
-func (c *Client) nextSequenceNr() (sequenceNr uint32) {
-	sequenceNr = atomic.AddUint32(&c.sequenceNr, 1)
-	return
+func (c *Client) nextSequenceNr() uint32 {
+	return atomic.AddUint32(&c.sequenceNr, 1)
 }
 
 func (c *Client) reader() {
@@ -198,18 +199,18 @@ func (c *Client) MainListPlugins() XmmsValue {
 }
 
 // TODO: Probably something else that creates a new Client rather than Dial.
-func Dial(url string, name string) (client Client, err error) {
+func Dial(url string, name string) (*Client, error) {
 	addr, err := net.ResolveTCPAddr("tcp", url)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	conn, err := net.DialTCP("tcp", nil, addr)
 	if err != nil {
-		return
+		return nil, err
 	}
 
-	client = Client{
+	client := Client{
 		conn:     conn,
 		inbound:  make(chan reply),
 		outbound: make(chan message),
@@ -222,5 +223,5 @@ func Dial(url string, name string) (client Client, err error) {
 
 	client.clientId = client.MainHello(name)
 
-	return
+	return &client, nil
 }
