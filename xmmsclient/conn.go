@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"sync/atomic"
 )
 
 type context struct {
@@ -25,8 +24,9 @@ type header struct {
 type message struct {
 	objectId  uint32
 	commandId uint32
+	broadcast bool
 	args      XmmsValue
-	context   context
+	result    chan XmmsValue
 }
 
 type reply struct {
@@ -95,7 +95,8 @@ func writeHeader(w io.ReadWriteCloser, hdr *header) error {
 }
 
 func (c *Client) nextSequenceNr() uint32 {
-	return atomic.AddUint32(&c.sequenceNr, 1)
+	c.sequenceNr += 1
+	return c.sequenceNr
 }
 
 func (c *Client) reader() {
@@ -126,7 +127,8 @@ func (c *Client) writer() {
 	for msg := range c.outbound {
 		var payload bytes.Buffer
 
-		c.registry <- msg.context
+		sequenceNr := c.nextSequenceNr()
+		c.registry <- context{msg.result, sequenceNr, msg.broadcast}
 
 		err := SerializeXmmsValue(msg.args, &payload)
 		if err != nil {
@@ -136,7 +138,7 @@ func (c *Client) writer() {
 		header := header{
 			objectId:   msg.objectId,
 			commandId:  msg.commandId,
-			sequenceNr: msg.context.sequenceNr,
+			sequenceNr: sequenceNr,
 			length:     uint32(len(payload.Bytes())),
 		}
 
@@ -169,30 +171,32 @@ func (c *Client) router() {
 	}
 }
 
+func (c *Client) dispatch(objectId uint32, commandId uint32, args XmmsValue) chan XmmsValue {
+	var result = make(chan XmmsValue)
+	c.outbound <- message{
+		objectId:  objectId,
+		commandId: commandId,
+		broadcast: false,
+		args:      args,
+		result:    result,
+	}
+	return result
+}
+
 // TODO: Needs a better home, should be generated.
 func (c *Client) MainHello(client_name string) XmmsValue {
-	context := context{
-		result:     make(chan XmmsValue),
-		sequenceNr: c.nextSequenceNr()}
-	c.outbound <- message{
-		objectId:  ObjectMain,
-		commandId: CommandMainHello,
-		context:   context,
-		args:      NewXmmsList(XmmsInt(IpcVersion), XmmsString(client_name))}
-	return <-context.result
+	return <-c.dispatch(
+		ObjectMain, CommandMainHello,
+		NewXmmsList(XmmsInt(IpcVersion), XmmsString(client_name)),
+	)
 }
 
 // TODO: Needs a better home, should be generated.
 func (c *Client) MainListPlugins() XmmsValue {
-	context := context{
-		result:     make(chan XmmsValue),
-		sequenceNr: c.nextSequenceNr()}
-	c.outbound <- message{
-		args:      NewXmmsList(XmmsInt(0)),
-		objectId:  ObjectMain,
-		commandId: CommandMainListPlugins,
-		context:   context}
-	return <-context.result
+	return <-c.dispatch(
+		ObjectMain, CommandMainListPlugins,
+		NewXmmsList(XmmsInt(0)),
+	)
 }
 
 // TODO: Probably something else that creates a new Client rather than Dial.
