@@ -20,3 +20,4 @@ A first exploration of the Go programming language with a target of implementing
 * What is idiomatic Go-esque style?
   * Naming things
 * Explore memory management.
+* Proper shutdown, both per request, and in response to errors.
