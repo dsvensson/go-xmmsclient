@@ -9,6 +9,7 @@ A first exploration of the Go programming language with a target of implementing
   * XmmsList/XmmsDict params today that can be []string, or even ...string, map[..]...
   * Emit API documentation
   * Generate constants/enums.
+  * Generate broadcasts/signals
   * All functions should return (val, err)
   * Translate XmmsError to err
   * Check enum parameters against the int value passed in.
