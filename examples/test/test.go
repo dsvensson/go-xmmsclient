@@ -8,7 +8,7 @@ import (
 
 func RepeatSomething(c *xmmsclient.Client) {
 	for {
-		fmt.Println(c.MainListPlugins())
+		fmt.Println(c.MainListPlugins(0))
 		time.Sleep(time.Millisecond * 500)
 	}
 }
@@ -22,7 +22,7 @@ func main() {
 
 	fmt.Println("Plugins:")
 
-	fmt.Println(client.MainListPlugins())
+	fmt.Println(client.MainListPlugins(0))
 
 	select {}
 }

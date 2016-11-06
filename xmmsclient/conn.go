@@ -185,22 +185,6 @@ func (c *Client) dispatch(objectId uint32, commandId uint32, args XmmsValue) cha
 	return result
 }
 
-// TODO: Needs a better home, should be generated.
-func (c *Client) mainHello(client_name string) XmmsValue {
-	return <-c.dispatch(
-		ObjectMain, CommandMainHello,
-		NewXmmsList(XmmsInt(IpcVersion), XmmsString(client_name)),
-	)
-}
-
-// TODO: Needs a better home, should be generated.
-func (c *Client) MainListPlugins() XmmsValue {
-	return <-c.dispatch(
-		ObjectMain, CommandMainListPlugins,
-		NewXmmsList(XmmsInt(0)),
-	)
-}
-
 func (c *Client) Dial(url string) error {
 	addr, err := net.ResolveTCPAddr("tcp", url)
 	if err != nil {
@@ -220,7 +204,7 @@ func (c *Client) Dial(url string) error {
 	go c.reader()
 	go c.writer()
 
-	c.clientId = int64(c.mainHello(c.clientName).(XmmsInt)) // TODO: err
+	c.clientId = int64(c.MainHello(24, c.clientName).(XmmsInt)) // TODO: err
 
 	return nil
 }
