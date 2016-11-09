@@ -26,8 +26,8 @@ func (c *Client) {{.Name}}(
 	{{- range $index, $arg := .Args}}
 		{{- if $index}}, {{end -}}
 		{{- $arg.Name}} {{$arg.Type -}}
-	{{end -}}) XmmsValue {
-	return <-c.dispatch({{.ObjectId}}, {{.CommandId}}, NewXmmsList(
+	{{end -}}) (XmmsValue, error) {
+	result := <-c.dispatch({{.ObjectId}}, {{.CommandId}}, NewXmmsList(
 	{{- range $index, $arg := .Args -}}
 		{{- if $index}}, {{end -}}
 		{{- if $arg.HasXmmsType}}
@@ -36,6 +36,7 @@ func (c *Client) {{.Name}}(
 			{{- $arg.Name -}}
 		{{- end -}}
 	{{- end -}}))
+	return result.value, result.err
 }
 {{end}}`
 

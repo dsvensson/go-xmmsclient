@@ -9,8 +9,13 @@ import (
 	"net"
 )
 
+type result struct {
+	value XmmsValue
+	err   error
+}
+
 type context struct {
-	result     chan XmmsValue
+	result     chan result
 	sequenceNr uint32
 	broadcast  bool
 }
@@ -27,7 +32,7 @@ type message struct {
 	commandId uint32
 	broadcast bool
 	args      XmmsValue
-	result    chan XmmsValue
+	result    chan result
 }
 
 type reply struct {
@@ -165,7 +170,7 @@ func (c *Client) router() {
 			registry[ctx.sequenceNr] = ctx
 		case reply := <-c.inbound:
 			ctx := registry[reply.sequenceNr]
-			ctx.result <- reply.value
+			ctx.result <- result{reply.value, nil}
 			if !ctx.broadcast {
 				delete(registry, ctx.sequenceNr)
 			}
@@ -173,11 +178,11 @@ func (c *Client) router() {
 	}
 }
 
-func (c *Client) dispatch(objectId uint32, commandId uint32, args XmmsValue) chan XmmsValue {
-	var result = make(chan XmmsValue)
 	c.outbound <- message{
 		objectId:  objectId,
 		commandId: commandId,
+func (c *Client) dispatch(objectId uint32, commandId uint32, args XmmsValue) chan result {
+	var result = make(chan result)
 		broadcast: false,
 		args:      args,
 		result:    result,
