@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 )
@@ -28,8 +27,7 @@ type header struct {
 }
 
 type message struct {
-	objectId  uint32
-	commandId uint32
+	header    header
 	broadcast bool
 	args      XmmsValue
 	result    chan result
@@ -41,14 +39,13 @@ type reply struct {
 }
 
 type Client struct {
-	conn       io.ReadWriteCloser
 	sequenceNr uint32
 	clientName string
-	clientId   int64
+	clientId   int
 
-	inbound  chan reply
-	outbound chan message
-	registry chan context
+	shutdownRegistry chan bool
+	shutdownIO       chan bool
+	registry         chan message
 }
 
 func parseHeader(buf *bytes.Buffer) (*header, error) {
@@ -106,83 +103,99 @@ func (c *Client) nextSequenceNr() uint32 {
 	return c.sequenceNr
 }
 
-func (c *Client) reader() {
+func (c *Client) reader(conn *net.TCPConn, inbound chan reply) {
 	var buffer = make([]byte, 16)
-	for {
-		read, err := io.ReadFull(c.conn, buffer)
-		if err != nil {
-			// TODO: Post to error channel
-			fmt.Println("error reading socket")
-			continue
-		}
 
-		if read != len(buffer) {
-			fmt.Println("nothing to read")
-			continue
+	for {
+		_, err := io.ReadFull(conn, buffer)
+		if err != nil {
+			return
 		}
 
 		header, err := parseHeader(bytes.NewBuffer(buffer))
 
 		payload := make([]byte, header.length)
-		c.conn.Read(payload)
+
+		_, err = io.ReadFull(conn, payload)
+		if err != nil {
+			return
+		}
+
 		value, _ := DeserializeXmmsValue(bytes.NewBuffer(payload))
-		c.inbound <- reply{header.sequenceNr, value}
+
+		inbound <- reply{header.sequenceNr, value}
 	}
 }
 
-func (c *Client) writer() {
-	for msg := range c.outbound {
-		var payload bytes.Buffer
-
-		sequenceNr := c.nextSequenceNr()
-		c.registry <- context{msg.result, sequenceNr, msg.broadcast}
-
-		err := SerializeXmmsValue(msg.args, &payload)
-		if err != nil {
-			continue
-		}
-
-		header := header{
-			objectId:   msg.objectId,
-			commandId:  msg.commandId,
-			sequenceNr: sequenceNr,
-			length:     uint32(len(payload.Bytes())),
-		}
-
-		err = writeHeader(c.conn, &header)
-		if err != nil {
-			continue
-		}
-
-		payload.WriteTo(c.conn)
-		if err != nil {
-			continue
-		}
-	}
-}
-
-func (c *Client) router() {
-	var registry = make(map[uint32](context))
-
+func (c *Client) writer(conn *net.TCPConn, outbound chan message) {
+writer:
 	for {
 		select {
-		case ctx := <-c.registry:
-			registry[ctx.sequenceNr] = ctx
-		case reply := <-c.inbound:
+		case msg := <-outbound:
+			var payload bytes.Buffer
+
+			err := SerializeXmmsValue(msg.args, &payload)
+			if err != nil {
+				break writer
+			}
+
+			msg.header.length = uint32(len(payload.Bytes()))
+
+			err = writeHeader(conn, &msg.header)
+			if err != nil {
+				break writer
+			}
+
+			payload.WriteTo(conn)
+			if err != nil {
+				break writer
+			}
+		case <-c.shutdownIO:
+			return
+		}
+	}
+
+	// TODO: Probably a better place for this.
+	conn.Close()
+}
+
+func (c *Client) router(inbound chan reply, outbound chan message) {
+	var registry = make(map[uint32](context))
+
+router:
+	for {
+		select {
+		case msg := <-c.registry:
+			msg.header.sequenceNr = c.nextSequenceNr()
+			registry[msg.header.sequenceNr] = context{
+				msg.result,
+				msg.header.sequenceNr,
+				msg.broadcast,
+			}
+			outbound <- msg
+		case reply := <-inbound:
 			ctx := registry[reply.sequenceNr]
 			ctx.result <- result{reply.value, nil}
 			if !ctx.broadcast {
 				delete(registry, ctx.sequenceNr)
 			}
+		case <-c.shutdownRegistry:
+			break router
 		}
+	}
+
+	for _, v := range registry {
+		v.result <- result{nil, io.EOF}
 	}
 }
 
-	c.outbound <- message{
-		objectId:  objectId,
-		commandId: commandId,
 func (c *Client) dispatch(objectId uint32, commandId uint32, args XmmsValue) chan result {
 	var result = make(chan result)
+	c.registry <- message{
+		header: header{
+			objectId:  objectId,
+			commandId: commandId,
+		},
 		broadcast: false,
 		args:      args,
 		result:    result,
@@ -196,29 +209,43 @@ func (c *Client) Dial(url string) error {
 		return err
 	}
 
-	c.conn, err = net.DialTCP("tcp", nil, addr)
+	conn, err := net.DialTCP("tcp", nil, addr)
 	if err != nil {
 		return err
 	}
 
-	c.inbound = make(chan reply)
-	c.outbound = make(chan message)
-	c.registry = make(chan context)
+	c.shutdownRegistry = make(chan bool)
+	c.shutdownIO = make(chan bool)
+	c.registry = make(chan message)
 
-	go c.router()
-	go c.reader()
-	go c.writer()
+	inbound := make(chan reply)
+	outbound := make(chan message)
 
-	c.clientId = int64(c.MainHello(24, c.clientName).(XmmsInt)) // TODO: err
+	go c.reader(conn, inbound)
+	go c.writer(conn, outbound)
+	go c.router(inbound, outbound)
+
+	clientId, err := c.MainHello(24, c.clientName)
+	if err != nil {
+		return err
+	}
+
+	c.clientId = int(clientId.(XmmsInt))
 
 	return nil
 }
 
-func (c *Client) ClientId() (int64, error) {
+func (c *Client) ClientId() (int, error) {
 	if c.clientId == -1 {
 		return -1, errors.New("Client Id not initialized.")
 	}
-	return int64(c.clientId), nil
+	return c.clientId, nil
+}
+
+func (c *Client) Close() {
+	c.shutdownRegistry <- true
+	c.shutdownIO <- true
+	c.clientId = -1
 }
 
 func NewClient(name string) *Client {
