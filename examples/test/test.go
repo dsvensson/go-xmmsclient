@@ -6,9 +6,13 @@ import (
 	"time"
 )
 
-func RepeatSomething(c *xmmsclient.Client) {
+func repeat(c *xmmsclient.Client) {
 	for {
-		fmt.Println(c.MainListPlugins(0))
+		value, err := c.PlaylistListEntries("_active")
+		if err != nil {
+			return
+		}
+		fmt.Println("repeat():", value)
 		time.Sleep(time.Millisecond * 500)
 	}
 }
@@ -18,11 +22,17 @@ func main() {
 
 	client.Dial("localhost:xmms2")
 
-	go RepeatSomething(client)
+	go repeat(client)
 
-	fmt.Println("Plugins:")
+	value, err := client.PlaylistListEntries("_active")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
-	fmt.Println(client.MainListPlugins(0))
+	fmt.Println("  main():", value)
 
-	select {}
+	time.Sleep(time.Second * 2)
+	client.Close()
+	time.Sleep(time.Second * 1)
 }
