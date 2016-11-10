@@ -1,6 +1,10 @@
 package xmmsclient
 
 const (
+	ActivePlaylist = "_active"
+)
+
+const (
 	IpcVersion int64 = 24
 )
 
