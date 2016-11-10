@@ -6,14 +6,30 @@ import (
 	"time"
 )
 
-func repeat(c *xmmsclient.Client) {
+func repeat(client *xmmsclient.Client) {
 	for {
-		value, err := c.PlaylistListEntries("_active")
+		value, err := client.PlaylistListEntries(xmmsclient.ActivePlaylist)
 		if err != nil {
 			return
 		}
-		fmt.Println("repeat():", value)
-		time.Sleep(time.Millisecond * 500)
+		lst := value.(xmmsclient.XmmsList)
+		for position, v := range lst.Entries {
+			mid := int(v.(xmmsclient.XmmsInt))
+
+			propDict, err := client.MedialibGetInfo(mid)
+			if err != nil {
+				return
+			}
+
+			dict, err := xmmsclient.PropDictToDictDefault(propDict)
+			if err != nil {
+				return
+			}
+
+			fmt.Printf("repeat(): [%2d] %s // %s // %s\n",
+				position, dict["artist"], dict["album"], dict["title"])
+		}
+		time.Sleep(time.Millisecond * 1500)
 	}
 }
 
@@ -33,6 +49,8 @@ func main() {
 	fmt.Println("  main():", value)
 
 	time.Sleep(time.Second * 2)
+	fmt.Println(" close():")
 	client.Close()
+	fmt.Println(" sleep():")
 	time.Sleep(time.Second * 1)
 }
