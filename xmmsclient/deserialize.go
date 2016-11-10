@@ -21,7 +21,8 @@ func deserializeRawString(buffer *bytes.Buffer) (value string, err error) {
 	if err != nil {
 		return
 	}
-	value = string(data)
+	value = string(data[:length-1])
+
 	return
 }
 
