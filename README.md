@@ -10,14 +10,8 @@ A first exploration of the Go programming language with a target of implementing
   * Emit API documentation
   * Generate constants/enums.
   * Generate broadcasts/signals
-  * All functions should return (val, err)
   * Translate XmmsError to err
   * Check enum parameters against the int value passed in.
   * Heuristics
     * Better naming of some functions
     * Maybe generate more functions for some commands and hide params internally
-* How to deal with the highly dynamic API of `xmmsc_medialib_query`.
-* What is idiomatic Go-esque style?
-  * Naming things
-* Explore memory management.
-* Proper shutdown, both per request, and in response to errors.
