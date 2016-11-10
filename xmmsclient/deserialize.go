@@ -71,18 +71,19 @@ func deserializeDict(buffer *bytes.Buffer) (value XmmsDict, err error) {
 	}
 	var dict = XmmsDict{}
 	for i := uint32(0); i < length; i++ {
-		var strlength uint32
 		var entry XmmsValue
-		err = binary.Read(buffer, binary.BigEndian, &strlength)
+		var key string
+
+		key, err = deserializeRawString(buffer)
 		if err != nil {
 			return
 		}
-		var key = make([]byte, strlength)
-		err = binary.Read(buffer, binary.BigEndian, &key)
-		if err != nil {
-			return
-		}
+
 		entry, err = DeserializeXmmsValue(buffer)
+		if err != nil {
+			return
+		}
+
 		dict[string(key)] = entry
 	}
 	value = dict
