@@ -234,7 +234,7 @@ func (c *Client) Dial(url string) error {
 		return err
 	}
 
-	c.clientId = int(clientId.(XmmsInt))
+	c.clientId = int(clientId)
 
 	return nil
 }

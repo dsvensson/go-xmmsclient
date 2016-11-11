@@ -10,10 +10,10 @@ func repeat(client *xmmsclient.Client) {
 	for {
 		value, err := client.PlaylistListEntries(xmmsclient.ActivePlaylist)
 		if err != nil {
+			fmt.Println("Fail!", err)
 			return
 		}
-		lst := value.(xmmsclient.XmmsList)
-		for position, v := range lst.Entries {
+		for position, v := range value.Entries {
 			mid := int(v.(xmmsclient.XmmsInt))
 
 			propDict, err := client.MedialibGetInfo(mid)
