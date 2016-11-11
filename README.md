@@ -10,7 +10,6 @@ A first exploration of the Go programming language with a target of implementing
   * Emit API documentation
   * Generate constants/enums.
   * Generate broadcasts/signals
-  * Translate XmmsError to err
   * Check enum parameters against the int value passed in.
   * Heuristics
     * Better naming of some functions

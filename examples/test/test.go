@@ -18,6 +18,7 @@ func repeat(client *xmmsclient.Client) {
 
 			propDict, err := client.MedialibGetInfo(mid)
 			if err != nil {
+				fmt.Println("Fail!", err)
 				return
 			}
 

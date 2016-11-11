@@ -175,7 +175,11 @@ router:
 			outbound <- msg
 		case reply := <-inbound:
 			ctx := registry[reply.sequenceNr]
-			ctx.result <- result{reply.value, nil}
+			if error, ok := reply.value.(XmmsError); ok {
+				ctx.result <- result{nil, errors.New(string(error))}
+			} else {
+				ctx.result <- result{reply.value, nil}
+			}
 			if !ctx.broadcast {
 				delete(registry, ctx.sequenceNr)
 			}
