@@ -8,11 +8,14 @@ type Arg struct {
 }
 
 type Function struct {
-	ObjectId   int
-	CommandId  int
-	Name       string
-	Args       []Arg
-	ReturnType string
+	ObjectId      int
+	CommandId     int
+	Name          string
+	Args          []Arg
+	ReturnType    string
+	ReturnCast    string
+	ReturnFail    string
+	HasReturnCast bool
 }
 
 func collectArguments(arguments []XmlArgument) []Arg {
@@ -53,15 +56,41 @@ func collectArguments(arguments []XmlArgument) []Arg {
 	return result
 }
 
+func collectReturnType(signature XmlReturnValue) (string, string, string) {
+	if len(signature.Type) == 0 {
+		// TODO: Deal with void functions.
+		return "XmmsValue", "", "result.value"
+	}
+	switch signature.Type[0] {
+	case "enum-value":
+		return "XmmsInt", "valueAsInt", "0"
+	case "int":
+		return "XmmsInt", "valueAsInt", "0"
+	case "string":
+		return "XmmsString", "valueAsString", "\"\""
+	case "list":
+		return "XmmsList", "valueAsList", "XmmsList{}"
+	case "dictionary":
+		return "XmmsDict", "valueAsDict", "XmmsDict{}"
+	default:
+		return "XmmsValue", "", "nil"
+	}
+}
+
 func collectFunctions(objects []XmlObject, offset int) []Function {
 	var functions []Function
 	for objectId, obj := range objects {
 		for commandId, method := range obj.Methods {
+			returnType, returnCast, returnFail := collectReturnType(method.ReturnValue)
 			functions = append(functions, Function{
-				ObjectId:  objectId + 1,
-				CommandId: commandId + offset,
-				Name:      toCamelCase(obj.Name+"_"+method.Name, true),
-				Args:      collectArguments(method.Arguments),
+				ObjectId:      objectId + 1,
+				CommandId:     commandId + offset,
+				Name:          toCamelCase(obj.Name+"_"+method.Name, true),
+				Args:          collectArguments(method.Arguments),
+				ReturnType:    returnType,
+				ReturnCast:    returnCast,
+				ReturnFail:    returnFail,
+				HasReturnCast: returnCast != "",
 			})
 		}
 		objectId += 1

@@ -26,7 +26,7 @@ func (c *Client) {{.Name}}(
 	{{- range $index, $arg := .Args}}
 		{{- if $index}}, {{end -}}
 		{{- $arg.Name}} {{$arg.Type -}}
-	{{end -}}) (XmmsValue, error) {
+	{{end -}}) ({{.ReturnType}}, error) {
 	result := <-c.dispatch({{.ObjectId}}, {{.CommandId}}, NewXmmsList(
 	{{- range $index, $arg := .Args -}}
 		{{- if $index}}, {{end -}}
@@ -36,7 +36,14 @@ func (c *Client) {{.Name}}(
 			{{- $arg.Name -}}
 		{{- end -}}
 	{{- end -}}))
-	return result.value, result.err
+	if result.err != nil {
+		return {{.ReturnFail}}, result.err
+	}
+	{{ if .HasReturnCast -}}
+		return {{.ReturnCast}}(result.value)
+	{{- else -}}
+		return result.value, result.err
+	{{- end }}
 }
 {{end}}`
 
@@ -48,12 +55,14 @@ func main() {
 
 	f, err := os.Open(os.Args[1])
 	if err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 		return
 	}
 
 	data, err := ioutil.ReadAll(f)
 	if err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 		return
 	}
@@ -61,6 +70,7 @@ func main() {
 	var q Query
 	err = xml.Unmarshal(data, &q)
 	if err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 		return
 	}
@@ -69,6 +79,7 @@ func main() {
 
 	tpl, err := template.New("method").Parse(methodTemplate)
 	if err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 		return
 	}
