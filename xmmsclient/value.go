@@ -1,5 +1,9 @@
 package xmmsclient
 
+import (
+	"errors"
+)
+
 type XmmsValue interface {
 	isXmmsValue()
 }
@@ -24,4 +28,32 @@ func (l XmmsList) isXmmsValue() {}
 
 func NewXmmsList(entries ...XmmsValue) XmmsList {
 	return XmmsList{Entries: entries, Restrict: TypeNone}
+}
+
+func valueAsInt(raw XmmsValue) (XmmsInt, error) {
+	if value, ok := raw.(XmmsInt); ok {
+		return value, nil
+	}
+	return 0, errors.New("Bad type")
+}
+
+func valueAsString(raw XmmsValue) (XmmsString, error) {
+	if value, ok := raw.(XmmsString); ok {
+		return value, nil
+	}
+	return "", errors.New("Bad type")
+}
+
+func valueAsList(raw XmmsValue) (XmmsList, error) {
+	if value, ok := raw.(XmmsList); ok {
+		return value, nil
+	}
+	return XmmsList{}, errors.New("Bad type")
+}
+
+func valueAsDict(raw XmmsValue) (XmmsDict, error) {
+	if value, ok := raw.(XmmsDict); ok {
+		return value, nil
+	}
+	return XmmsDict{}, errors.New("Bad type")
 }
