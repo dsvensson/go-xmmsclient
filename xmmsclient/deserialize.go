@@ -54,6 +54,7 @@ func deserializeList(buffer *bytes.Buffer) (value XmmsList, err error) {
 		return
 	}
 	var list = NewXmmsList()
+	list.Restrict = restrict
 	if restrict != TypeNone {
 		for i := uint32(0); i < length; i++ {
 			var entry XmmsValue
