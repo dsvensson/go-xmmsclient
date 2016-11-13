@@ -20,7 +20,19 @@ func toCamelCase(name string, initialUpper bool) string {
 	return strings.ToLower(parts[0]) + strings.Join(parts[1:], "")
 }
 
+var enumTemplate = `
+package xmmsclient
+
+const (
+{{- range $key, $values := .}}
+{{ range $values}}
+	{{.Name}} = {{.Value}}
+{{- end}}
+{{- end}}
+)`
+
 var methodTemplate = `package xmmsclient
+
 {{range .}}
 func (c *Client) {{.Name}}(
 	{{- range $index, $arg := .Args}}
@@ -75,7 +87,21 @@ func main() {
 		return
 	}
 
-	// var enums = collectEnums(q.Enums)
+	/*
+		tpl, err := template.New("enums").Parse(enumTemplate)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+			return
+		}
+
+		err = tpl.Execute(os.Stdout, collectEnums(q.Enums))
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+			return
+		}
+	*/
 
 	tpl, err := template.New("method").Parse(methodTemplate)
 	if err != nil {
@@ -86,8 +112,8 @@ func main() {
 
 	err = tpl.Execute(os.Stdout, collectFunctions(q.Objects, q.Offset))
 	if err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 		return
 	}
-
 }

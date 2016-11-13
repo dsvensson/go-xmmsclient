@@ -1,8 +1,8 @@
 package main
 
 type EnumValue struct {
-	name  string
-	value int
+	Name  string
+	Value int
 }
 
 func collectEnums(enums []XmlEnum) map[string][]EnumValue {
