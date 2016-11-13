@@ -58,12 +58,20 @@ func deserializeList(buffer *bytes.Buffer) (value XmmsList, err error) {
 		for i := uint32(0); i < length; i++ {
 			var entry XmmsValue
 			entry, err = DeserializeXmmsValueType(restrict, buffer)
+			if err != nil {
+				return
+			}
+
 			list.Entries = append(list.Entries, entry)
 		}
 	} else {
 		for i := uint32(0); i < length; i++ {
 			var entry XmmsValue
 			entry, err = DeserializeXmmsValue(buffer)
+			if err != nil {
+				return
+			}
+
 			list.Entries = append(list.Entries, entry)
 		}
 	}
