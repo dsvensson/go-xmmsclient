@@ -5,6 +5,218 @@ import (
 	"testing"
 )
 
+func TestDeserializeString(t *testing.T) {
+	buffer := bytes.NewBuffer([]byte{
+		0x00, 0x00, 0x00, 0x03, // XMMSV_TYPE_STRING
+		0x00, 0x00, 0x00, 0x04, // 4 (length of following bytes)
+		0x66, 0x6f, 0x6f, 0x00, // "foo\0"
+	})
+
+	value, err := DeserializeXmmsValue(buffer)
+	if err != nil {
+		t.Fatal("could not deserialize string")
+	}
+
+	string := value.(XmmsString)
+	if string != XmmsString("foo") {
+		t.Fatal("wrong string")
+	}
+}
+
+func TestDeserializeError(t *testing.T) {
+	buffer := bytes.NewBuffer([]byte{
+		0x00, 0x00, 0x00, 0x01, // XMMSV_TYPE_ERROR
+		0x00, 0x00, 0x00, 0x04, // 4 (length of following bytes)
+		0x66, 0x6f, 0x6f, 0x00, // "foo\0"
+	})
+
+	value, err := DeserializeXmmsValue(buffer)
+	if err != nil {
+		t.Fatal("could not deserialize error")
+	}
+
+	error := value.(XmmsError)
+	if error != XmmsError("foo") {
+		t.Fatal("wrong error message")
+	}
+}
+
+/*
+func TestDeserializeBindata(t *testing.T) {
+	buffer := bytes.NewBuffer([]byte{
+		0x00, 0x00, 0x00, 0x05, // XMMSV_TYPE_BIN
+		0x00, 0x00, 0x00, 0x08, // 8 (length of following bytes)
+		0x01, 0x02, 0x03, 0x04,
+		0x00, 0x01, 0x02, 0x03,
+	})
+
+	value, err := DeserializeXmmsValue(buffer)
+	if err != nil {
+		t.Fatal("could not deserialize bindata")
+	}
+
+	bindata := value.(XmmsBindata)
+	if bindata != XmmsInt(42) {
+		t.Fatal("wrong bindata")
+	}
+}
+*/
+
+func TestDeserializeInt(t *testing.T) {
+	buffer := bytes.NewBuffer([]byte{
+		0x00, 0x00, 0x00, 0x02, // XMMSV_TYPE_INT64
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x2a, // 42
+	})
+
+	value, err := DeserializeXmmsValue(buffer)
+	if err != nil {
+		t.Fatal("could not deserialize number")
+	}
+
+	number := value.(XmmsInt)
+	if number != XmmsInt(42) {
+		t.Fatal("wrong number")
+	}
+}
+
+func TestDeserializeFloat(t *testing.T) {
+	buffer := bytes.NewBuffer([]byte{
+		0x00, 0x00, 0x00, 0x09, // XMMSV_TYPE_FLOAT
+		0x60, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00,
+	})
+
+	value, err := DeserializeXmmsValue(buffer)
+	if err != nil {
+		t.Fatal("could not deserialize float")
+	}
+
+	float := value.(XmmsFloat)
+
+	rounded := float64(int(float*10000)) / 10000.0
+	if rounded != float64(0.75) {
+		t.Fatal("wrong float", rounded)
+	}
+}
+
+func TestDeserializeList(t *testing.T) {
+	buffer := bytes.NewBuffer([]byte{
+		0x00, 0x00, 0x00, 0x06, // XMMSV_TYPE_LIST
+		0x00, 0x00, 0x00, 0x00, // restrict to XMMSV_TYPE_NONE
+		0x00, 0x00, 0x00, 0x03, // 3 (number of list items)
+
+		0x00, 0x00, 0x00, 0x02, // list[0]: XMMSV_TYPE_INT64
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x2a, // list[0]: 42
+
+		0x00, 0x00, 0x00, 0x09, // list[0]: XMMSV_TYPE_FLOAT
+		0xc0, 0x00, 0x00, 0x00, // list[0]: -1.0
+		0x00, 0x00, 0x00, 0x01,
+
+		0x00, 0x00, 0x00, 0x03, // list[1]: XMMSV_TYPE_STRING
+		0x00, 0x00, 0x00, 0x04, // list[1]: 4 (length of following bytes)
+		0x66, 0x6f, 0x6f, 0x00, // list[1]: "foo\0"
+	})
+
+	value, err := DeserializeXmmsValue(buffer)
+	if err != nil {
+		t.Fatal("could not deserialize number")
+	}
+
+	list := value.(XmmsList)
+	if len(list.Entries) != 3 {
+		t.Fatal("wrong list size")
+	}
+
+	if list.Entries[0] != XmmsInt(42) {
+		t.Fatal("index 0 should be 42")
+	}
+
+	if list.Entries[1] != XmmsFloat(-1.) {
+		t.Fatal("index 1 should be -1.0")
+	}
+
+	if list.Entries[2] != XmmsString("foo") {
+		t.Fatal("index 1 should be -1.0")
+	}
+}
+
+func TestDeserializeRestrictedList(t *testing.T) {
+	buffer := bytes.NewBuffer([]byte{
+		0x00, 0x00, 0x00, 0x06, // XMMSV_TYPE_LIST
+		0x00, 0x00, 0x00, 0x02, // restrict to XMMSV_TYPE_INT64
+		0x00, 0x00, 0x00, 0x02, // 2 (number of list items)
+
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x2a, // list[0]: 42
+
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x17, // list[1]: 23
+	})
+
+	value, err := DeserializeXmmsValue(buffer)
+	if err != nil {
+		t.Fatal("could not deserialize number")
+	}
+
+	list := value.(XmmsList)
+	if list.Restrict != TypeInt64 {
+		t.Fatal("wrong list type")
+	}
+
+	if len(list.Entries) != 2 {
+		t.Fatal("wrong list size")
+	}
+
+	if list.Entries[0] != XmmsInt(42) {
+		t.Fatal("index 0 should be 42")
+	}
+
+	if list.Entries[1] != XmmsInt(23) {
+		t.Fatal("index 1 should be 23")
+	}
+}
+
+func TestDeserializeDict(t *testing.T) {
+	buffer := bytes.NewBuffer([]byte{
+		0x00, 0x00, 0x00, 0x07, // XMMSV_TYPE_DICT
+		0x00, 0x00, 0x00, 0x02, // 2 (number of dict items)
+
+		0x00, 0x00, 0x00, 0x04, // key[1]: 4 (length of following bytes)
+		0x66, 0x6f, 0x6f, 0x00, // key[1]: "foo\0"
+
+		0x00, 0x00, 0x00, 0x02, // value[1]: XMMSV_TYPE_INT64
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x2a, // value[1]: 42
+
+		0x00, 0x00, 0x00, 0x04, // key[0]: 4 (length of following bytes)
+		0x62, 0x61, 0x72, 0x00, // key[0]: "bar\0"
+
+		0x00, 0x00, 0x00, 0x02, // value[0]: XMMSV_TYPE_INT64
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x25, 0xc3, // value[0]: 9667
+	})
+
+	value, err := DeserializeXmmsValue(buffer)
+	if err != nil {
+		t.Fatal("deserialization failed")
+	}
+
+	dict := value.(XmmsDict)
+	if len(dict) != 2 {
+		t.Fatal("wrong attributes count")
+	}
+
+	if dict["foo"] != XmmsInt(42) {
+		t.Fatal("wrong attribute, seed != 31337")
+	}
+
+	if dict["bar"] != XmmsInt(9667) {
+		t.Fatal("wrong attribute, seed != 31337")
+	}
+}
+
 func TestDeserializeColl(t *testing.T) {
 	buffer := bytes.NewBuffer([]byte{
 		0x00, 0x00, 0x00, 0x04, /* XMMSV_TYPE_COLL */
