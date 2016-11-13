@@ -8,13 +8,12 @@ import (
 	"net"
 )
 
-type result struct {
-	value XmmsValue
-	err   error
+type resultConsumer interface {
+	post(value XmmsValue, err error)
 }
 
 type context struct {
-	result     chan result
+	result     resultConsumer
 	sequenceNr uint32
 	broadcast  bool
 }
@@ -30,7 +29,7 @@ type message struct {
 	header    header
 	broadcast bool
 	args      XmmsValue
-	result    chan result
+	result    resultConsumer
 }
 
 type reply struct {
@@ -176,9 +175,9 @@ router:
 		case reply := <-inbound:
 			ctx := registry[reply.sequenceNr]
 			if error, ok := reply.value.(XmmsError); ok {
-				ctx.result <- result{nil, errors.New(string(error))}
+				ctx.result.post(nil, errors.New(string(error)))
 			} else {
-				ctx.result <- result{reply.value, nil}
+				ctx.result.post(reply.value, nil)
 			}
 			if !ctx.broadcast {
 				delete(registry, ctx.sequenceNr)
@@ -189,12 +188,11 @@ router:
 	}
 
 	for _, v := range registry {
-		v.result <- result{nil, io.EOF}
+		v.result.post(nil, io.EOF)
 	}
 }
 
-func (c *Client) dispatch(objectId uint32, commandId uint32, args XmmsValue) chan result {
-	var result = make(chan result)
+func (c *Client) dispatch(result resultConsumer, objectId uint32, commandId uint32, args XmmsValue) {
 	c.registry <- message{
 		header: header{
 			objectId:  objectId,
@@ -204,7 +202,6 @@ func (c *Client) dispatch(objectId uint32, commandId uint32, args XmmsValue) cha
 		args:      args,
 		result:    result,
 	}
-	return result
 }
 
 func (c *Client) Dial(url string) error {

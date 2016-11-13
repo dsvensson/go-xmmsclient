@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/xml"
+	"io/ioutil"
+	"os"
 )
 
 type XmlValueType []string
@@ -74,4 +76,25 @@ func (c *XmlValueType) UnmarshalXML(d *xml.Decoder, start xml.StartElement) erro
 	*c = signature
 
 	return nil
+}
+
+func parseAPI(filename string) (*Query, error) {
+	var query Query
+
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
+
+	err = xml.Unmarshal(data, &query)
+	if err != nil {
+		return nil, err
+	}
+
+	return &query, nil
 }

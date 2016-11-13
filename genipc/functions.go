@@ -8,14 +8,12 @@ type Arg struct {
 }
 
 type Function struct {
-	ObjectId      int
-	CommandId     int
-	Name          string
-	Args          []Arg
-	ReturnType    string
-	ReturnCast    string
-	ReturnFail    string
-	HasReturnCast bool
+	ObjectId       int
+	CommandId      int
+	Name           string
+	Args           []Arg
+	ResultConsumer string
+	ReturnType     string
 }
 
 func collectArguments(arguments []XmlArgument) []Arg {
@@ -56,24 +54,24 @@ func collectArguments(arguments []XmlArgument) []Arg {
 	return result
 }
 
-func collectReturnType(signature XmlReturnValue) (string, string, string) {
+func collectResultConsumer(signature XmlReturnValue) (string, string) {
 	if len(signature.Type) == 0 {
 		// TODO: Deal with void functions.
-		return "XmmsValue", "", "result.value"
+		return "XmmsValue", "generic"
 	}
 	switch signature.Type[0] {
 	case "enum-value":
-		return "XmmsInt", "valueAsInt", "0"
+		return "XmmsInt", "int"
 	case "int":
-		return "XmmsInt", "valueAsInt", "0"
+		return "XmmsInt", "int"
 	case "string":
-		return "XmmsString", "valueAsString", "\"\""
+		return "XmmsString", "string"
 	case "list":
-		return "XmmsList", "valueAsList", "XmmsList{}"
+		return "XmmsList", "list"
 	case "dictionary":
-		return "XmmsDict", "valueAsDict", "XmmsDict{}"
+		return "XmmsDict", "dict"
 	default:
-		return "XmmsValue", "", "nil"
+		return "XmmsValue", "generic"
 	}
 }
 
@@ -81,16 +79,14 @@ func collectFunctions(objects []XmlObject, offset int) []Function {
 	var functions []Function
 	for objectId, obj := range objects {
 		for commandId, method := range obj.Methods {
-			returnType, returnCast, returnFail := collectReturnType(method.ReturnValue)
+			returnType, resultConsumer := collectResultConsumer(method.ReturnValue)
 			functions = append(functions, Function{
-				ObjectId:      objectId + 1,
-				CommandId:     commandId + offset,
-				Name:          toCamelCase(obj.Name+"_"+method.Name, true),
-				Args:          collectArguments(method.Arguments),
-				ReturnType:    returnType,
-				ReturnCast:    returnCast,
-				ReturnFail:    returnFail,
-				HasReturnCast: returnCast != "",
+				ObjectId:       objectId + 1,
+				CommandId:      commandId + offset,
+				Name:           toCamelCase(obj.Name+"_"+method.Name, true),
+				Args:           collectArguments(method.Arguments),
+				ResultConsumer: resultConsumer,
+				ReturnType:     returnType,
 			})
 		}
 		objectId += 1

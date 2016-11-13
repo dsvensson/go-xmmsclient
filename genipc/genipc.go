@@ -1,9 +1,7 @@
 package main
 
 import (
-	"encoding/xml"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"text/template"
@@ -20,7 +18,7 @@ func toCamelCase(name string, initialUpper bool) string {
 	return strings.ToLower(parts[0]) + strings.Join(parts[1:], "")
 }
 
-var enumTemplate = `
+var enumTemplate = `// auto-generated
 package xmmsclient
 
 const (
@@ -31,15 +29,16 @@ const (
 {{- end}}
 )`
 
-var methodTemplate = `package xmmsclient
-
+var methodTemplate = `// auto-generated
+package xmmsclient
 {{range .}}
 func (c *Client) {{.Name}}(
 	{{- range $index, $arg := .Args}}
 		{{- if $index}}, {{end -}}
 		{{- $arg.Name}} {{$arg.Type -}}
 	{{end -}}) ({{.ReturnType}}, error) {
-	result := <-c.dispatch({{.ObjectId}}, {{.CommandId}}, NewXmmsList(
+	consumer := new{{title .ResultConsumer}}Consumer()
+	c.dispatch(&consumer, {{.ObjectId}}, {{.CommandId}}, NewXmmsList(
 	{{- range $index, $arg := .Args -}}
 		{{- if $index}}, {{end -}}
 		{{- if $arg.HasXmmsType}}
@@ -48,71 +47,78 @@ func (c *Client) {{.Name}}(
 			{{- $arg.Name -}}
 		{{- end -}}
 	{{- end -}}))
-	if result.err != nil {
-		return {{.ReturnFail}}, result.err
-	}
-	{{ if .HasReturnCast -}}
-		return {{.ReturnCast}}(result.value)
-	{{- else -}}
-		return result.value, result.err
-	{{- end }}
+	result := <-consumer.result
+	return result.value, result.err
 }
 {{end}}`
 
+var resultConsumerTemplate = `// auto-generated
+package xmmsclient
+{{range .}}
+type {{.Name}}ConsumerType struct {
+	value {{.ResultType}}
+	err   error
+}
+
+type {{.Name}}Consumer struct {
+	result chan {{.Name}}ConsumerType
+}
+
+func new{{title .Name}}Consumer() {{.Name}}Consumer {
+	return {{.Name}}Consumer{make(chan {{.Name}}ConsumerType)}
+}
+
+func (r *{{.Name}}Consumer) post(value XmmsValue, err error) {
+	if err != nil {
+		r.result <- {{.Name}}ConsumerType{ {{- .DefaultValue}}, err}
+	} else {
+		r.result <- {{.Name}}ConsumerType{ {{- .Cast}}, err}
+	}
+}
+{{end}}`
+
+func collect(api *Query, template string) interface{} {
+	switch template {
+	case "enums":
+		return collectEnums(api.Enums)
+	case "methods":
+		return collectFunctions(api.Objects, api.Offset)
+	case "consumers":
+		return collectResultConsumers()
+	default:
+		panic("unknown template target")
+	}
+}
+
 func main() {
-	if len(os.Args) != 2 {
+	// TODO: flags
+	if len(os.Args) != 3 {
 		fmt.Println("Missing ipc.xml argument")
 		os.Exit(1)
 	}
 
-	f, err := os.Open(os.Args[1])
+	api, err := parseAPI(os.Args[1])
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
-		return
 	}
 
-	data, err := ioutil.ReadAll(f)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-		return
+	target := os.Args[2]
+
+	funcMap := template.FuncMap{
+		"title": strings.Title,
 	}
 
-	var q Query
-	err = xml.Unmarshal(data, &q)
+	tpl := template.New("").Funcs(funcMap)
+	tpl = template.Must(tpl.New("enums").Parse(enumTemplate))
+	tpl = template.Must(tpl.New("methods").Parse(methodTemplate))
+	tpl = template.Must(tpl.New("consumers").Parse(resultConsumerTemplate))
+
+	data := collect(api, target)
+
+	err = tpl.ExecuteTemplate(os.Stdout, target, data)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-		return
-	}
-
-	/*
-		tpl, err := template.New("enums").Parse(enumTemplate)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-			return
-		}
-
-		err = tpl.Execute(os.Stdout, collectEnums(q.Enums))
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-			return
-		}
-	*/
-
-	tpl, err := template.New("method").Parse(methodTemplate)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-		return
-	}
-
-	err = tpl.Execute(os.Stdout, collectFunctions(q.Objects, q.Offset))
-	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Fail!", err)
 		os.Exit(1)
 		return
 	}
