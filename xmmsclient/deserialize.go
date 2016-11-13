@@ -3,10 +3,37 @@ package xmmsclient
 import (
 	"bytes"
 	"encoding/binary"
+	"math"
 )
 
 func deserializeInt(buffer *bytes.Buffer) (value XmmsInt, err error) {
 	err = binary.Read(buffer, binary.BigEndian, &value)
+	return
+}
+
+func deserializeFloat(buffer *bytes.Buffer) (value XmmsFloat, err error) {
+	var mantissaInt int32
+	var exponent int32
+	var mantissa float64
+
+	err = binary.Read(buffer, binary.BigEndian, &mantissaInt)
+	if err != nil {
+		return
+	}
+
+	err = binary.Read(buffer, binary.BigEndian, &exponent)
+	if err != nil {
+		return
+	}
+
+	if mantissaInt > 0 {
+		mantissa = float64(mantissaInt) / float64(math.MaxInt32)
+	} else {
+		mantissa = float64(mantissaInt) / float64(math.Abs(math.MinInt32))
+	}
+
+	value = XmmsFloat(math.Ldexp(mantissa, int(exponent)))
+
 	return
 }
 
@@ -143,6 +170,8 @@ func DeserializeXmmsValueType(valueType uint32, buffer *bytes.Buffer) (result Xm
 	switch valueType {
 	case TypeInt64:
 		result, err = deserializeInt(buffer)
+	case TypeFloat:
+		result, err = deserializeFloat(buffer)
 	case TypeError:
 		result, err = deserializeError(buffer)
 	case TypeString:
