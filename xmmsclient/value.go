@@ -15,6 +15,12 @@ type XmmsList struct {
 	Entries  []XmmsValue
 	Restrict uint32
 }
+type XmmsColl struct {
+	Type       uint32
+	Operands   XmmsList
+	Attributes XmmsDict
+	IdList     XmmsList
+}
 
 func (i XmmsInt) isXmmsValue() {}
 
@@ -25,6 +31,8 @@ func (s XmmsString) isXmmsValue() {}
 func (d XmmsDict) isXmmsValue() {}
 
 func (l XmmsList) isXmmsValue() {}
+
+func (l XmmsColl) isXmmsValue() {}
 
 func NewXmmsList(entries ...XmmsValue) XmmsList {
 	return XmmsList{Entries: entries, Restrict: TypeNone}

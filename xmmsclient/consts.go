@@ -37,3 +37,24 @@ const (
 	TypeBitBuffer uint32 = 8
 	TypeFloat     uint32 = 9
 )
+
+const (
+	CollectionTypeReference    uint32 = 0
+	CollectionTypeUniverse     uint32 = 1
+	CollectionTypeUnion        uint32 = 2
+	CollectionTypeIntersection uint32 = 3
+	CollectionTypeComplement   uint32 = 4
+	CollectionTypeHas          uint32 = 5
+	CollectionTypeMatch        uint32 = 6
+	CollectionTypeToken        uint32 = 7
+	CollectionTypeEquals       uint32 = 8
+	CollectionTypeNotEqual     uint32 = 9
+	CollectionTypeSmaller      uint32 = 10
+	CollectionTypeSmallerEqual uint32 = 11
+	CollectionTypeGreater      uint32 = 12
+	CollectionTypeGreaterEqual uint32 = 13
+	CollectionTypeOrder        uint32 = 14
+	CollectionTypeLimit        uint32 = 15
+	CollectionTypeMediaset     uint32 = 16
+	CollectionTypeIdlist       uint32 = 17
+)
