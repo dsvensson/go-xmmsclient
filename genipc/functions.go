@@ -14,6 +14,7 @@ type Function struct {
 	ResultConsumer string
 	ReturnType     string
 	DefaultValue   string
+	Deserializer   string
 }
 
 func collectArguments(arguments []XmlArgument) []Arg {
@@ -53,24 +54,34 @@ func collectArguments(arguments []XmlArgument) []Arg {
 	return result
 }
 
-func collectResultConsumer(signature XmlReturnValue) (string, string) {
+func collectResultConsumer(signature XmlReturnValue) (string, string, string) {
 	if len(signature.Type) == 0 {
 		// TODO: Deal with void functions.
-		return "XmmsValue", "nil"
+		return "XmmsValue", "nil", ""
 	}
 	switch signature.Type[0] {
 	case "enum-value":
-		return "XmmsInt", "0"
+		return "XmmsInt", "0", ""
 	case "int":
-		return "XmmsInt", "0"
+		return "XmmsInt", "0", ""
 	case "string":
-		return "XmmsString", "\"\""
+		return "XmmsString", "\"\"", ""
 	case "list":
-		return "XmmsList", "XmmsList{}"
+		if len(signature.Type) > 1 {
+			switch signature.Type[1] {
+			case "int":
+				return "[]int", "nil", "tryDeserializeIntList"
+			case "string":
+				return "[]string", "nil", "tryDeserializeStringList"
+			case "dictionary":
+				return "[]XmmsDict", "nil", "tryDeserializeDictList"
+			}
+		}
+		return "XmmsList", "XmmsList{}", ""
 	case "dictionary":
-		return "XmmsDict", "XmmsDict{}"
+		return "XmmsDict", "XmmsDict{}", ""
 	default:
-		return "XmmsValue", "nil"
+		return "XmmsValue", "nil", ""
 	}
 }
 
@@ -78,7 +89,7 @@ func collectFunctions(objects []XmlObject, offset int) []Function {
 	var functions []Function
 	for objectId, obj := range objects {
 		for commandId, method := range obj.Methods {
-			returnType, defaultValue := collectResultConsumer(method.ReturnValue)
+			returnType, defaultValue, deserializer := collectResultConsumer(method.ReturnValue)
 			functions = append(functions, Function{
 				ObjectId:     objectId + 1,
 				CommandId:    commandId + offset,
@@ -86,6 +97,7 @@ func collectFunctions(objects []XmlObject, offset int) []Function {
 				Args:         collectArguments(method.Arguments),
 				DefaultValue: defaultValue,
 				ReturnType:   returnType,
+				Deserializer: deserializer,
 			})
 		}
 		objectId += 1

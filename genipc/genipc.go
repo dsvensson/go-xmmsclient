@@ -52,11 +52,15 @@ func (c *Client) {{.Name}}(
 		{{- end -}}
 	{{- end -}}})
 	__buffer := bytes.NewBuffer(__payload)
-	__value, __err := tryDeserialize(__buffer, deserializeXmmsValue)
+	{{ if len .Deserializer -}}
+	return {{.Deserializer}}(__buffer)
+	{{- else -}}
+	__value, __err := tryDeserialize(__buffer)
 	if __err != nil {
 		return {{.DefaultValue}}, __err
 	}
 	return __value.({{.ReturnType}}), nil
+	{{- end}}
 }
 {{end}}`
 

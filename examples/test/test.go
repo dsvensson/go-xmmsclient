@@ -13,9 +13,7 @@ func repeat(client *xmmsclient.Client) {
 			fmt.Println("Fail!", err)
 			return
 		}
-		for position, v := range value {
-			mid := int(v.(xmmsclient.XmmsInt))
-
+		for position, mid := range value {
 			propDict, err := client.MedialibGetInfo(mid)
 			if err != nil {
 				fmt.Println("Fail!", err)
@@ -41,13 +39,15 @@ func main() {
 
 	go repeat(client)
 
-	value, err := client.PlaylistListEntries("_active")
+	value, err := client.CollectionList("Playlists")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	fmt.Println("  main():", value)
+	for _, name := range value {
+		fmt.Println("  main():", name)
+	}
 
 	time.Sleep(time.Second * 2)
 	fmt.Println(" close():")
