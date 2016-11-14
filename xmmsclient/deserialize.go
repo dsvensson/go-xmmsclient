@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"math"
 )
 
@@ -209,4 +210,65 @@ func tryDeserialize(buffer *bytes.Buffer) (XmmsValue, error) {
 	}
 
 	return value, nil
+}
+
+func tryDeserializeList(buffer *bytes.Buffer, consumer listConsumer) error {
+	var valueType uint32
+
+	err := binary.Read(buffer, binary.BigEndian, &valueType)
+	if err != nil {
+		return err
+	}
+
+	switch valueType {
+	case TypeError:
+		value, err := deserializeError(buffer)
+		if err != nil {
+			return err
+		}
+		return errors.New(string(value))
+	case TypeList:
+		return deserializeAnyList(buffer, consumer)
+	default:
+		return errors.New(fmt.Sprintf("Trying to parse non-list as list (%v)", valueType))
+	}
+}
+
+func tryDeserializeIntList(buffer *bytes.Buffer) ([]int, error) {
+	var list []int
+	err := tryDeserializeList(buffer, func(raw XmmsValue) {
+		if value, ok := raw.(XmmsInt); ok {
+			list = append(list, int(value))
+		}
+	})
+	if err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+func tryDeserializeStringList(buffer *bytes.Buffer) ([]string, error) {
+	var list []string
+	err := tryDeserializeList(buffer, func(raw XmmsValue) {
+		if value, ok := raw.(XmmsString); ok {
+			list = append(list, string(value))
+		}
+	})
+	if err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+func tryDeserializeDictList(buffer *bytes.Buffer) ([]XmmsDict, error) {
+	var list []XmmsDict
+	err := tryDeserializeList(buffer, func(raw XmmsValue) {
+		if value, ok := raw.(XmmsDict); ok {
+			list = append(list, value)
+		}
+	})
+	if err != nil {
+		return nil, err
+	}
+	return list, nil
 }
