@@ -5,6 +5,12 @@ const (
 )
 
 const (
+	NamespaceAll         = "*"
+	NamespaceCollections = "Collections"
+	NamespacePlaylists   = "Playlists"
+)
+
+const (
 	IpcVersion int64 = 24
 )
 
