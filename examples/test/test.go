@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/dsvensson/go-xmmsclient/xmmsclient"
+	"strings"
 	"time"
 )
 
@@ -39,14 +40,18 @@ func main() {
 
 	go repeat(client)
 
-	value, err := client.CollectionList("Playlists")
+	time.Sleep(time.Millisecond * 5)
+
+	value, err := client.CollectionList(xmmsclient.NamespacePlaylists)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	for _, name := range value {
-		fmt.Println("  main():", name)
+	for index, name := range value {
+		if !strings.HasPrefix(name, "_") {
+			fmt.Printf("  main(): [%2v] %v::%v\n", index, xmmsclient.NamespacePlaylists, name)
+		}
 	}
 
 	time.Sleep(time.Second * 2)
