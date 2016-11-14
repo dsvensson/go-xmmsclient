@@ -168,7 +168,9 @@ router:
 			outbound <- msg
 		case reply := <-inbound:
 			ctx := registry[reply.sequenceNr]
-			ctx.result <- reply.payload
+			go func() {
+				ctx.result <- reply.payload
+			}()
 			if !ctx.broadcast {
 				delete(registry, ctx.sequenceNr)
 			}
