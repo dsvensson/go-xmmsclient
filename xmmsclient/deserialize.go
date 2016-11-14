@@ -7,6 +7,7 @@ import (
 	"math"
 )
 
+type listConsumer func(value XmmsValue)
 type deserializer func(buffer *bytes.Buffer) (XmmsValue, error)
 
 func deserializeInt(buffer *bytes.Buffer) (value XmmsInt, err error) {
@@ -72,39 +73,42 @@ func deserializeError(buffer *bytes.Buffer) (value XmmsError, err error) {
 	return
 }
 
-func deserializeList(buffer *bytes.Buffer) (value XmmsList, err error) {
+func deserializeAnyList(buffer *bytes.Buffer, consumer listConsumer) error {
 	var restrict uint32
-	err = binary.Read(buffer, binary.BigEndian, &restrict) // TODO: respect restrict
+	err := binary.Read(buffer, binary.BigEndian, &restrict) // TODO: respect restrict
 	if err != nil {
-		return
+		return err
 	}
 	var length uint32
 	err = binary.Read(buffer, binary.BigEndian, &length)
 	if err != nil {
-		return
+		return err
 	}
-	list := XmmsList{}
 	if restrict != TypeNone {
 		for i := uint32(0); i < length; i++ {
-			var entry XmmsValue
-			entry, err = deserializeXmmsValueOfType(restrict, buffer)
+			entry, err := deserializeXmmsValueOfType(restrict, buffer)
 			if err != nil {
-				return
+				return err
 			}
-
-			list = append(list, entry)
+			consumer(entry)
 		}
 	} else {
 		for i := uint32(0); i < length; i++ {
-			var entry XmmsValue
-			entry, err = deserializeXmmsValue(buffer)
+			entry, err := deserializeXmmsValue(buffer)
 			if err != nil {
-				return
+				return err
 			}
-
-			list = append(list, entry)
+			consumer(entry)
 		}
 	}
+	return nil
+}
+
+func deserializeList(buffer *bytes.Buffer) (value XmmsList, err error) {
+	list := XmmsList{}
+	err = deserializeAnyList(buffer, func(value XmmsValue) {
+		list = append(list, value)
+	})
 	value = list
 	return
 }
