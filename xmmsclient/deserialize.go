@@ -8,7 +8,6 @@ import (
 )
 
 type listConsumer func(value XmmsValue)
-type deserializer func(buffer *bytes.Buffer) (XmmsValue, error)
 
 func deserializeInt(buffer *bytes.Buffer) (value XmmsInt, err error) {
 	err = binary.Read(buffer, binary.BigEndian, &value)
@@ -198,8 +197,8 @@ func deserializeXmmsValue(buffer *bytes.Buffer) (XmmsValue, error) {
 	return deserializeXmmsValueOfType(valueType, buffer)
 }
 
-func tryDeserialize(buffer *bytes.Buffer, fun deserializer) (XmmsValue, error) {
-	value, err := fun(buffer)
+func tryDeserialize(buffer *bytes.Buffer) (XmmsValue, error) {
+	value, err := deserializeXmmsValue(buffer)
 	if err != nil {
 		return nil, err
 	}
