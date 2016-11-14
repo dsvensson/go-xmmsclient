@@ -29,24 +29,20 @@ func serializeString(s XmmsString, buffer *bytes.Buffer) error {
 }
 
 func serializeList(l XmmsList, buffer *bytes.Buffer) error {
-	err := binary.Write(buffer, binary.BigEndian, l.Restrict)
+	err := binary.Write(buffer, binary.BigEndian, TypeNone)
 	if err != nil {
 		return err
 	}
 
-	err = binary.Write(buffer, binary.BigEndian, uint32(len(l.Entries)))
+	err = binary.Write(buffer, binary.BigEndian, uint32(len(l)))
 	if err != nil {
 		return err
 	}
 
-	if l.Restrict != TypeNone {
-		// TODO: serialize restricted types
-	} else {
-		for _, entry := range l.Entries {
-			err = serializeXmmsValue(entry, buffer)
-			if err != nil {
-				return err
-			}
+	for _, entry := range l {
+		err = serializeXmmsValue(entry, buffer)
+		if err != nil {
+			return err
 		}
 	}
 

@@ -13,7 +13,7 @@ func repeat(client *xmmsclient.Client) {
 			fmt.Println("Fail!", err)
 			return
 		}
-		for position, v := range value.Entries {
+		for position, v := range value {
 			mid := int(v.(xmmsclient.XmmsInt))
 
 			propDict, err := client.MedialibGetInfo(mid)

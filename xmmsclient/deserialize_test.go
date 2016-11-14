@@ -125,19 +125,19 @@ func TestDeserializeList(t *testing.T) {
 	}
 
 	list := value.(XmmsList)
-	if len(list.Entries) != 3 {
+	if len(list) != 3 {
 		t.Fatal("wrong list size")
 	}
 
-	if list.Entries[0] != XmmsInt(42) {
+	if list[0] != XmmsInt(42) {
 		t.Fatal("index 0 should be 42")
 	}
 
-	if list.Entries[1] != XmmsFloat(-1.) {
+	if list[1] != XmmsFloat(-1.) {
 		t.Fatal("index 1 should be -1.0")
 	}
 
-	if list.Entries[2] != XmmsString("foo") {
+	if list[2] != XmmsString("foo") {
 		t.Fatal("index 1 should be -1.0")
 	}
 }
@@ -161,19 +161,15 @@ func TestDeserializeRestrictedList(t *testing.T) {
 	}
 
 	list := value.(XmmsList)
-	if list.Restrict != TypeInt64 {
-		t.Fatal("wrong list type")
-	}
-
-	if len(list.Entries) != 2 {
+	if len(list) != 2 {
 		t.Fatal("wrong list size")
 	}
 
-	if list.Entries[0] != XmmsInt(42) {
+	if list[0] != XmmsInt(42) {
 		t.Fatal("index 0 should be 42")
 	}
 
-	if list.Entries[1] != XmmsInt(23) {
+	if list[1] != XmmsInt(23) {
 		t.Fatal("index 1 should be 23")
 	}
 }
@@ -291,11 +287,11 @@ func TestDeserializeColl(t *testing.T) {
 		t.Fatal("wrong attribute, field != artist")
 	}
 
-	if len(coll.Operands.Entries) != 1 {
+	if len(coll.Operands) != 1 {
 		t.Fatal("wrong attributes count")
 	}
 
-	operand := coll.Operands.Entries[0].(XmmsColl)
+	operand := coll.Operands[0].(XmmsColl)
 
 	if operand.Type != CollectionTypeUniverse {
 		t.Fatal("wrong collection type")
@@ -305,11 +301,11 @@ func TestDeserializeColl(t *testing.T) {
 		t.Fatal("wrong attributes count")
 	}
 
-	if len(operand.IdList.Entries) != 0 {
+	if len(operand.IdList) != 0 {
 		t.Fatal("wrong idlist size")
 	}
 
-	if len(operand.Operands.Entries) != 0 {
+	if len(operand.Operands) != 0 {
 		t.Fatal("wrong operands count")
 	}
 

@@ -57,7 +57,7 @@ func TestSerializeList(t *testing.T) {
 	}
 	var buffer bytes.Buffer
 
-	var err = serializeXmmsValue(newXmmsList(XmmsInt(42), XmmsString("test")), &buffer)
+	var err = serializeXmmsValue(XmmsList{XmmsInt(42), XmmsString("test")}, &buffer)
 	if err != nil {
 		t.Fatal(err)
 	}
