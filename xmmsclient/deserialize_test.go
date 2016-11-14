@@ -291,21 +291,19 @@ func TestDeserializeColl(t *testing.T) {
 		t.Fatal("wrong attributes count")
 	}
 
-	operand := coll.Operands[0].(XmmsColl)
-
-	if operand.Type != CollectionTypeUniverse {
+	if coll.Operands[0].Type != CollectionTypeUniverse {
 		t.Fatal("wrong collection type")
 	}
 
-	if len(operand.Attributes) != 0 {
+	if len(coll.Operands[0].Attributes) != 0 {
 		t.Fatal("wrong attributes count")
 	}
 
-	if len(operand.IdList) != 0 {
+	if len(coll.Operands[0].IdList) != 0 {
 		t.Fatal("wrong idlist size")
 	}
 
-	if len(operand.Operands) != 0 {
+	if len(coll.Operands[0].Operands) != 0 {
 		t.Fatal("wrong operands count")
 	}
 

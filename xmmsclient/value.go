@@ -15,9 +15,9 @@ type XmmsRestrictedList struct {
 }
 type XmmsColl struct {
 	Type       uint32
-	Operands   XmmsList
+	Operands   []XmmsColl
 	Attributes XmmsDict
-	IdList     XmmsList
+	IdList     []int
 }
 
 func (i XmmsInt) isXmmsValue() {}

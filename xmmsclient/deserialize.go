@@ -141,33 +141,30 @@ func deserializeDict(buffer *bytes.Buffer) (value XmmsDict, err error) {
 }
 
 func deserializeColl(buffer *bytes.Buffer) (result XmmsColl, err error) {
-	var collectionType uint32
-	err = binary.Read(buffer, binary.BigEndian, &collectionType)
+	err = binary.Read(buffer, binary.BigEndian, &result.Type)
 	if err != nil {
 		return
 	}
 
-	attributes, err := deserializeDict(buffer)
+	result.Attributes, err = deserializeDict(buffer)
 	if err != nil {
 		return
 	}
 
-	ids, err := deserializeList(buffer)
+	err = deserializeAnyList(buffer, func(raw XmmsValue) {
+		if value, ok := raw.(XmmsInt); ok {
+			result.IdList = append(result.IdList, int(value))
+		}
+	})
 	if err != nil {
 		return
 	}
 
-	operands, err := deserializeList(buffer)
-	if err != nil {
-		return
-	}
-
-	result = XmmsColl{
-		Type:       collectionType,
-		Operands:   operands,
-		Attributes: attributes,
-		IdList:     ids,
-	}
+	err = deserializeAnyList(buffer, func(raw XmmsValue) {
+		if value, ok := raw.(XmmsColl); ok {
+			result.Operands = append(result.Operands, value)
+		}
+	})
 
 	return
 }
