@@ -150,7 +150,7 @@ writer:
 				break writer
 			}
 		case <-c.shutdownIO:
-			return
+			break writer
 		}
 	}
 
