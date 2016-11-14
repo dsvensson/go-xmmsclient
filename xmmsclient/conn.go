@@ -127,7 +127,7 @@ writer:
 		case msg := <-outbound:
 			var payload bytes.Buffer
 
-			err := SerializeXmmsValue(msg.args, &payload)
+			err := serializeXmmsValue(msg.args, &payload)
 			if err != nil {
 				break writer
 			}

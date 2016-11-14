@@ -43,7 +43,7 @@ func serializeList(l XmmsList, buffer *bytes.Buffer) error {
 		// TODO: serialize restricted types
 	} else {
 		for _, entry := range l.Entries {
-			err = SerializeXmmsValue(entry, buffer)
+			err = serializeXmmsValue(entry, buffer)
 			if err != nil {
 				return err
 			}
@@ -65,7 +65,7 @@ func serializeDict(dict XmmsDict, buffer *bytes.Buffer) error {
 			return err
 		}
 
-		err = SerializeXmmsValue(v, buffer)
+		err = serializeXmmsValue(v, buffer)
 		if err != nil {
 			return err
 		}
@@ -74,7 +74,7 @@ func serializeDict(dict XmmsDict, buffer *bytes.Buffer) error {
 	return nil
 }
 
-func SerializeXmmsValue(value XmmsValue, buffer *bytes.Buffer) (err error) {
+func serializeXmmsValue(value XmmsValue, buffer *bytes.Buffer) (err error) {
 	switch value.(type) {
 	case XmmsInt:
 		err = binary.Write(buffer, binary.BigEndian, TypeInt64)

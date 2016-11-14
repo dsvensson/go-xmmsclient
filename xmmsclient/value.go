@@ -33,6 +33,6 @@ func (l XmmsList) isXmmsValue() {}
 
 func (l XmmsColl) isXmmsValue() {}
 
-func NewXmmsList(entries ...XmmsValue) XmmsList {
+func newXmmsList(entries ...XmmsValue) XmmsList {
 	return XmmsList{Entries: entries, Restrict: TypeNone}
 }

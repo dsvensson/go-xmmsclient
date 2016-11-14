@@ -83,12 +83,11 @@ func deserializeList(buffer *bytes.Buffer) (value XmmsList, err error) {
 	if err != nil {
 		return
 	}
-	var list = NewXmmsList()
-	list.Restrict = restrict
+	list := XmmsList{Restrict: restrict}
 	if restrict != TypeNone {
 		for i := uint32(0); i < length; i++ {
 			var entry XmmsValue
-			entry, err = DeserializeXmmsValueType(restrict, buffer)
+			entry, err = deserializeXmmsValueOfType(restrict, buffer)
 			if err != nil {
 				return
 			}
@@ -98,7 +97,7 @@ func deserializeList(buffer *bytes.Buffer) (value XmmsList, err error) {
 	} else {
 		for i := uint32(0); i < length; i++ {
 			var entry XmmsValue
-			entry, err = DeserializeXmmsValue(buffer)
+			entry, err = deserializeXmmsValue(buffer)
 			if err != nil {
 				return
 			}
@@ -126,7 +125,7 @@ func deserializeDict(buffer *bytes.Buffer) (value XmmsDict, err error) {
 			return
 		}
 
-		entry, err = DeserializeXmmsValue(buffer)
+		entry, err = deserializeXmmsValue(buffer)
 		if err != nil {
 			return
 		}
@@ -169,7 +168,7 @@ func deserializeColl(buffer *bytes.Buffer) (result XmmsColl, err error) {
 	return
 }
 
-func DeserializeXmmsValueType(valueType uint32, buffer *bytes.Buffer) (result XmmsValue, err error) {
+func deserializeXmmsValueOfType(valueType uint32, buffer *bytes.Buffer) (result XmmsValue, err error) {
 	switch valueType {
 	case TypeInt64:
 		result, err = deserializeInt(buffer)
@@ -189,10 +188,10 @@ func DeserializeXmmsValueType(valueType uint32, buffer *bytes.Buffer) (result Xm
 	return
 }
 
-func DeserializeXmmsValue(buffer *bytes.Buffer) (XmmsValue, error) {
+func deserializeXmmsValue(buffer *bytes.Buffer) (XmmsValue, error) {
 	var valueType uint32
 	binary.Read(buffer, binary.BigEndian, &valueType)
-	return DeserializeXmmsValueType(valueType, buffer)
+	return deserializeXmmsValueOfType(valueType, buffer)
 }
 
 func tryDeserialize(buffer *bytes.Buffer, fun deserializer) (XmmsValue, error) {

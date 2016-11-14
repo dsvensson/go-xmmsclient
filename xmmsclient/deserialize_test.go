@@ -12,7 +12,7 @@ func TestDeserializeString(t *testing.T) {
 		0x66, 0x6f, 0x6f, 0x00, // "foo\0"
 	})
 
-	value, err := DeserializeXmmsValue(buffer)
+	value, err := deserializeXmmsValue(buffer)
 	if err != nil {
 		t.Fatal("could not deserialize string")
 	}
@@ -30,7 +30,7 @@ func TestDeserializeError(t *testing.T) {
 		0x66, 0x6f, 0x6f, 0x00, // "foo\0"
 	})
 
-	value, err := DeserializeXmmsValue(buffer)
+	value, err := deserializeXmmsValue(buffer)
 	if err != nil {
 		t.Fatal("could not deserialize error")
 	}
@@ -50,7 +50,7 @@ func TestDeserializeBindata(t *testing.T) {
 		0x00, 0x01, 0x02, 0x03,
 	})
 
-	value, err := DeserializeXmmsValue(buffer)
+	value, err := deserializeXmmsValue(buffer)
 	if err != nil {
 		t.Fatal("could not deserialize bindata")
 	}
@@ -69,7 +69,7 @@ func TestDeserializeInt(t *testing.T) {
 		0x00, 0x00, 0x00, 0x2a, // 42
 	})
 
-	value, err := DeserializeXmmsValue(buffer)
+	value, err := deserializeXmmsValue(buffer)
 	if err != nil {
 		t.Fatal("could not deserialize number")
 	}
@@ -87,7 +87,7 @@ func TestDeserializeFloat(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00,
 	})
 
-	value, err := DeserializeXmmsValue(buffer)
+	value, err := deserializeXmmsValue(buffer)
 	if err != nil {
 		t.Fatal("could not deserialize float")
 	}
@@ -119,7 +119,7 @@ func TestDeserializeList(t *testing.T) {
 		0x66, 0x6f, 0x6f, 0x00, // list[1]: "foo\0"
 	})
 
-	value, err := DeserializeXmmsValue(buffer)
+	value, err := deserializeXmmsValue(buffer)
 	if err != nil {
 		t.Fatal("could not deserialize number")
 	}
@@ -155,7 +155,7 @@ func TestDeserializeRestrictedList(t *testing.T) {
 		0x00, 0x00, 0x00, 0x17, // list[1]: 23
 	})
 
-	value, err := DeserializeXmmsValue(buffer)
+	value, err := deserializeXmmsValue(buffer)
 	if err != nil {
 		t.Fatal("could not deserialize number")
 	}
@@ -198,7 +198,7 @@ func TestDeserializeDict(t *testing.T) {
 		0x00, 0x00, 0x25, 0xc3, // value[0]: 9667
 	})
 
-	value, err := DeserializeXmmsValue(buffer)
+	value, err := deserializeXmmsValue(buffer)
 	if err != nil {
 		t.Fatal("deserialization failed")
 	}
@@ -264,7 +264,7 @@ func TestDeserializeColl(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00, /* operands: count */
 	})
 
-	value, err := DeserializeXmmsValue(buffer)
+	value, err := deserializeXmmsValue(buffer)
 	if err != nil {
 		t.Fatal("deserialization failed")
 	}
