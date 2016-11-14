@@ -41,7 +41,7 @@ func (c *Client) {{.Name}}(
 	c.dispatch(&consumer, {{.ObjectId}}, {{.CommandId}}, NewXmmsList(
 	{{- range $index, $arg := .Args -}}
 		{{- if $index}}, {{end -}}
-		{{- if $arg.HasXmmsType}}
+		{{- if len $arg.XmmsType}}
 			{{- $arg.XmmsType}}({{$arg.Name -}})
 		{{- else -}}
 			{{- $arg.Name -}}

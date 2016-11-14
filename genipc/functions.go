@@ -1,10 +1,9 @@
 package main
 
 type Arg struct {
-	Name        string
-	Type        string
-	XmmsType    string
-	HasXmmsType bool
+	Name     string
+	Type     string
+	XmmsType string
 }
 
 type Function struct {
@@ -44,10 +43,9 @@ func collectArguments(arguments []XmlArgument) []Arg {
 			panic("Unexpected type")
 		}
 		result = append(result, Arg{
-			Name:        toCamelCase(arg.Name, false),
-			Type:        argType,
-			XmmsType:    xmmsType,
-			HasXmmsType: len(xmmsType) > 0,
+			Name:     toCamelCase(arg.Name, false),
+			Type:     argType,
+			XmmsType: xmmsType,
 		})
 	}
 
