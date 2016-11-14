@@ -31,14 +31,18 @@ const (
 
 var methodTemplate = `// auto-generated
 package xmmsclient
+
+import (
+	"bytes"
+)
+
 {{range .}}
 func (c *Client) {{.Name}}(
 	{{- range $index, $arg := .Args}}
 		{{- if $index}}, {{end -}}
 		{{- $arg.Name}} {{$arg.Type -}}
 	{{end -}}) ({{.ReturnType}}, error) {
-	consumer := new{{title .ResultConsumer}}Consumer()
-	c.dispatch(&consumer, {{.ObjectId}}, {{.CommandId}}, NewXmmsList(
+	__payload := <-c.dispatch({{.ObjectId}}, {{.CommandId}}, NewXmmsList(
 	{{- range $index, $arg := .Args -}}
 		{{- if $index}}, {{end -}}
 		{{- if len $arg.XmmsType}}
@@ -47,33 +51,12 @@ func (c *Client) {{.Name}}(
 			{{- $arg.Name -}}
 		{{- end -}}
 	{{- end -}}))
-	result := <-consumer.result
-	return result.value, result.err
-}
-{{end}}`
-
-var resultConsumerTemplate = `// auto-generated
-package xmmsclient
-{{range .}}
-type {{.Name}}ConsumerType struct {
-	value {{.ResultType}}
-	err   error
-}
-
-type {{.Name}}Consumer struct {
-	result chan {{.Name}}ConsumerType
-}
-
-func new{{title .Name}}Consumer() {{.Name}}Consumer {
-	return {{.Name}}Consumer{make(chan {{.Name}}ConsumerType)}
-}
-
-func (r *{{.Name}}Consumer) post(value XmmsValue, err error) {
-	if err != nil {
-		r.result <- {{.Name}}ConsumerType{ {{- .DefaultValue}}, err}
-	} else {
-		r.result <- {{.Name}}ConsumerType{ {{- .Cast}}, err}
+	__buffer := bytes.NewBuffer(__payload)
+	__value, __err := tryDeserialize(__buffer, DeserializeXmmsValue)
+	if __err != nil {
+		return {{.DefaultValue}}, __err
 	}
+	return __value.({{.ReturnType}}), nil
 }
 {{end}}`
 
@@ -83,8 +66,6 @@ func collect(api *Query, template string) interface{} {
 		return collectEnums(api.Enums)
 	case "methods":
 		return collectFunctions(api.Objects, api.Offset)
-	case "consumers":
-		return collectResultConsumers()
 	default:
 		panic("unknown template target")
 	}
@@ -112,7 +93,6 @@ func main() {
 	tpl := template.New("").Funcs(funcMap)
 	tpl = template.Must(tpl.New("enums").Parse(enumTemplate))
 	tpl = template.Must(tpl.New("methods").Parse(methodTemplate))
-	tpl = template.Must(tpl.New("consumers").Parse(resultConsumerTemplate))
 
 	data := collect(api, target)
 

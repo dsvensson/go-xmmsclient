@@ -3,8 +3,11 @@ package xmmsclient
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"math"
 )
+
+type deserializer func(buffer *bytes.Buffer) (XmmsValue, error)
 
 func deserializeInt(buffer *bytes.Buffer) (value XmmsInt, err error) {
 	err = binary.Read(buffer, binary.BigEndian, &value)
@@ -190,4 +193,18 @@ func DeserializeXmmsValue(buffer *bytes.Buffer) (XmmsValue, error) {
 	var valueType uint32
 	binary.Read(buffer, binary.BigEndian, &valueType)
 	return DeserializeXmmsValueType(valueType, buffer)
+}
+
+func tryDeserialize(buffer *bytes.Buffer, fun deserializer) (XmmsValue, error) {
+	value, err := fun(buffer)
+	if err != nil {
+		return nil, err
+	}
+
+	errorMessage, ok := value.(XmmsError)
+	if ok {
+		return nil, errors.New(string(errorMessage))
+	}
+
+	return value, nil
 }

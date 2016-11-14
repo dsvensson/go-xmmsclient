@@ -13,6 +13,7 @@ type Function struct {
 	Args           []Arg
 	ResultConsumer string
 	ReturnType     string
+	DefaultValue   string
 }
 
 func collectArguments(arguments []XmlArgument) []Arg {
@@ -55,21 +56,21 @@ func collectArguments(arguments []XmlArgument) []Arg {
 func collectResultConsumer(signature XmlReturnValue) (string, string) {
 	if len(signature.Type) == 0 {
 		// TODO: Deal with void functions.
-		return "XmmsValue", "generic"
+		return "XmmsValue", "nil"
 	}
 	switch signature.Type[0] {
 	case "enum-value":
-		return "XmmsInt", "int"
+		return "XmmsInt", "0"
 	case "int":
-		return "XmmsInt", "int"
+		return "XmmsInt", "0"
 	case "string":
-		return "XmmsString", "string"
+		return "XmmsString", "\"\""
 	case "list":
-		return "XmmsList", "list"
+		return "XmmsList", "XmmsList{}"
 	case "dictionary":
-		return "XmmsDict", "dict"
+		return "XmmsDict", "XmmsDict{}"
 	default:
-		return "XmmsValue", "generic"
+		return "XmmsValue", "nil"
 	}
 }
 
@@ -77,14 +78,14 @@ func collectFunctions(objects []XmlObject, offset int) []Function {
 	var functions []Function
 	for objectId, obj := range objects {
 		for commandId, method := range obj.Methods {
-			returnType, resultConsumer := collectResultConsumer(method.ReturnValue)
+			returnType, defaultValue := collectResultConsumer(method.ReturnValue)
 			functions = append(functions, Function{
-				ObjectId:       objectId + 1,
-				CommandId:      commandId + offset,
-				Name:           toCamelCase(obj.Name+"_"+method.Name, true),
-				Args:           collectArguments(method.Arguments),
-				ResultConsumer: resultConsumer,
-				ReturnType:     returnType,
+				ObjectId:     objectId + 1,
+				CommandId:    commandId + offset,
+				Name:         toCamelCase(obj.Name+"_"+method.Name, true),
+				Args:         collectArguments(method.Arguments),
+				DefaultValue: defaultValue,
+				ReturnType:   returnType,
 			})
 		}
 		objectId += 1

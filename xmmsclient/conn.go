@@ -8,12 +8,8 @@ import (
 	"net"
 )
 
-type resultConsumer interface {
-	post(value XmmsValue, err error)
-}
-
 type context struct {
-	result     resultConsumer
+	result     chan []byte
 	sequenceNr uint32
 	broadcast  bool
 }
@@ -29,12 +25,12 @@ type message struct {
 	header    header
 	broadcast bool
 	args      XmmsValue
-	result    resultConsumer
+	result    chan []byte
 }
 
 type reply struct {
 	sequenceNr uint32
-	value      XmmsValue
+	payload    []byte
 }
 
 type Client struct {
@@ -120,9 +116,7 @@ func (c *Client) reader(conn *net.TCPConn, inbound chan reply) {
 			return
 		}
 
-		value, _ := DeserializeXmmsValue(bytes.NewBuffer(payload))
-
-		inbound <- reply{header.sequenceNr, value}
+		inbound <- reply{header.sequenceNr, payload}
 	}
 }
 
@@ -174,11 +168,7 @@ router:
 			outbound <- msg
 		case reply := <-inbound:
 			ctx := registry[reply.sequenceNr]
-			if error, ok := reply.value.(XmmsError); ok {
-				ctx.result.post(nil, errors.New(string(error)))
-			} else {
-				ctx.result.post(reply.value, nil)
-			}
+			ctx.result <- reply.payload
 			if !ctx.broadcast {
 				delete(registry, ctx.sequenceNr)
 			}
@@ -188,11 +178,13 @@ router:
 	}
 
 	for _, v := range registry {
-		v.result.post(nil, io.EOF)
+		// TODO: Something better here, maybe serialize an XmmsError
+		v.result <- nil
 	}
 }
 
-func (c *Client) dispatch(result resultConsumer, objectId uint32, commandId uint32, args XmmsValue) {
+func (c *Client) dispatch(objectId uint32, commandId uint32, args XmmsValue) chan []byte {
+	result := make(chan []byte)
 	c.registry <- message{
 		header: header{
 			objectId:  objectId,
@@ -202,6 +194,7 @@ func (c *Client) dispatch(result resultConsumer, objectId uint32, commandId uint
 		args:      args,
 		result:    result,
 	}
+	return result
 }
 
 func (c *Client) Dial(url string) error {
