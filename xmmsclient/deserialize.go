@@ -191,7 +191,10 @@ func deserializeXmmsValueOfType(valueType uint32, buffer *bytes.Buffer) (result 
 
 func deserializeXmmsValue(buffer *bytes.Buffer) (XmmsValue, error) {
 	var valueType uint32
-	binary.Read(buffer, binary.BigEndian, &valueType)
+	err := binary.Read(buffer, binary.BigEndian, &valueType)
+	if err != nil {
+		return nil, err
+	}
 	return deserializeXmmsValueOfType(valueType, buffer)
 }
 
