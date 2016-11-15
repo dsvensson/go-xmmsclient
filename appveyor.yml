@@ -1,0 +1,13 @@
+clone_folder: c:\gopath\src\github.com\dsvensson\go-xmmsclient
+
+environment:
+  GOPATH: c:\gopath
+
+install:
+  - go version
+  - go env
+  - go get -u github.com/jstemmer/go-junit-report
+
+build_script:
+  - go test -v ./xmmsclient | c:\gopath\bin\go-junit-report > report.xml
+  - ps: (New-Object 'System.Net.WebClient').UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\report.xml))
