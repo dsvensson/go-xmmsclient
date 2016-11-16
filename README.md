@@ -1,4 +1,4 @@
-# go-xmmsclient [![Travis](https://api.travis-ci.org/dsvensson/go-xmmsclient.svg)](https://travis-ci.org/dsvensson/go-xmmsclient) [![AppVeyor](https://ci.appveyor.com/api/projects/status/b8kho8abq6pm56n5?svg=true)](https://ci.appveyor.com/project/dsvensson/go-xmmsclient) [![Coverage Status](https://coveralls.io/repos/github/dsvensson/go-xmmsclient/badge.svg)](https://coveralls.io/github/dsvensson/go-xmmsclient)
+# go-xmmsclient [![Travis](https://api.travis-ci.org/dsvensson/go-xmmsclient.svg)](https://travis-ci.org/dsvensson/go-xmmsclient) [![AppVeyor](https://ci.appveyor.com/api/projects/status/b8kho8abq6pm56n5?svg=true)](https://ci.appveyor.com/project/dsvensson/go-xmmsclient) [![Coverage Status](https://coveralls.io/repos/github/dsvensson/go-xmmsclient/badge.svg)](https://coveralls.io/github/dsvensson/go-xmmsclient) [![GoDoc](https://godoc.org/github.com/dsvensson/go-xmmsclient/xmmsclient?status.svg)](http://godoc.org/github.com/dsvensson/go-xmmsclient/xmmsclient)
 
 A first exploration of the Go programming language with a target of implementing a full xmmsclient library to communicate with the [XMMS2](https://github.com/xmms2/xmms2-devel) music player.
 
