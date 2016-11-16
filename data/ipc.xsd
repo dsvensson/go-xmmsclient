@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?> <!-- -*- nxml -*- -->
+<!--
+vim:expandtab
+-->
+
+<!-- XML Schema for the XMMS2 IPC description file -->
+
+<xs:schema
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:xmms="https://xmms2.org/ipc.xsd"
+    targetNamespace="https://xmms2.org/ipc.xsd"
+    elementFormDefault="qualified">
+
+    <!-- The root node -->
+    <xs:element name="ipc">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="constant" type="xmms:constant" minOccurs="0" maxOccurs="unbounded" />
+                <xs:element name="enum" type="xmms:enum" minOccurs="0" maxOccurs="unbounded" />
+                <xs:element name="object" type="xmms:object" minOccurs="1" maxOccurs="unbounded" />
+            </xs:sequence>
+
+            <!-- The 'version' attribute is mandatory -->
+            <xs:attribute name="version" type="xs:positiveInteger" use="required"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="constant">
+        <xs:sequence>
+            <xs:element name="name" type="xs:string" minOccurs="1" maxOccurs="1"/>
+            <xs:element name="value" type="xmms:constant_value" minOccurs="1" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="constant_value">
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute name="type" type="xmms:constant_type"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+
+    <xs:simpleType name="constant_type">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="integer" />
+            <xs:enumeration value="string" />
+            <xs:enumeration value="float" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:complexType name="enum">
+        <xs:sequence>
+            <xs:element name="name" type="xs:string" minOccurs="1" maxOccurs="1"/>
+            <xs:element name="namespace-hint" type="xs:string" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="member" type="xmms:enum_member" minOccurs="1" maxOccurs="unbounded" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="enum_member">
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute name="value" type="xs:integer"/>
+                <xs:attribute name="ref-type" type="xmms:enum_ref_type"/>
+                <xs:attribute name="ref-source" type="xs:string"/>
+                <xs:attribute name="ref-value" type="xs:string"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+
+    <xs:simpleType name="enum_ref_type">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="enum" />
+            <xs:enumeration value="constant" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- An object (playlist, medialib, ...) -->
+    <xs:complexType name="object">
+        <xs:sequence>
+            <!-- Objects need a name -->
+            <xs:element name="name" type="xs:string"/>
+
+            <!-- Should this be mandatory? -->
+            <xs:element name="documentation" type="xs:string" minOccurs="0"/>
+
+            <!-- Objects have zero or more methods/broadcasts/signals -->
+            <xs:element name="method" type="xmms:method" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="broadcast" type="xmms:broadcast_or_signal" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="signal" type="xmms:broadcast_or_signal" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!-- An object's method -->
+    <xs:complexType name="method">
+        <xs:sequence>
+            <!-- Methods need a name -->
+            <xs:element name="name" type="xs:string"/>
+
+            <!-- Methods need documentation -->
+            <xs:element name="documentation" type="xs:string"/>
+
+            <!-- Methods have zero or more arguments -->
+            <xs:element name="argument" type="xmms:argument" minOccurs="0" maxOccurs="unbounded"/>
+
+            <!-- Methods may optionally have a return value -->
+            <xs:element name="return_value" type="xmms:return_value" minOccurs="0"/>
+        </xs:sequence>
+
+        <!-- Methods may optionally not send a reply to the client -->
+        <xs:attribute name="noreply" type="xs:boolean"/>
+
+        <!-- Methods may optionally receive the cookie for the call -->
+        <xs:attribute name="need_cookie" type="xs:boolean"/>
+
+        <!-- Methods may optionally receive the calling client id -->
+        <xs:attribute name="need_client" type="xs:boolean"/>
+    </xs:complexType>
+
+    <!-- An object's broadcast or signal -->
+    <xs:complexType name="broadcast_or_signal">
+        <xs:sequence>
+            <!-- Broadcasts need an unique ID -->
+            <!--xs:element name="id" type="xs:string"/-->
+
+            <!-- Broadcasts need a name -->
+            <xs:element name="name" type="xs:string"/>
+
+            <!-- Broadcasts need documentation -->
+            <xs:element name="documentation" type="xs:string"/>
+
+            <!-- Broadcasts need a return value -->
+            <xs:element name="return_value" type="xmms:return_value"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!-- A method's argument -->
+    <xs:complexType name="argument">
+        <xs:sequence>
+            <!-- Arguments need a name -->
+            <xs:element name="name" type="xs:string"/>
+
+            <!-- Arguments need documentation -->
+            <xs:element name="documentation" type="xs:string"/>
+
+            <!-- One type element is required -->
+            <xs:element name="type" type="xmms:argument_type" minOccurs="1" maxOccurs="1"/>
+
+            <!-- Arguments may optionally hint for a default value -->
+            <xs:element name="default-hint" type="xs:string" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!-- A method's return value -->
+    <xs:complexType name="return_value">
+        <xs:sequence>
+            <!-- Return values need documentation -->
+            <xs:element name="documentation" type="xs:string"/>
+
+            <!-- Exactly one type element is required -->
+            <xs:element name="type" type="xmms:return_value_type"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!-- The type of a method's argument -->
+    <xs:complexType name="argument_type">
+        <xs:group ref="xmms:value_types" />
+    </xs:complexType>
+
+    <!-- The type of a method's return value -->
+    <xs:complexType name="return_value_type">
+        <xs:choice>
+            <xs:element name="none" type="xmms:value_none"/>
+            <xs:group ref="xmms:value_types" />
+        </xs:choice>
+    </xs:complexType>
+
+    <xs:group name="value_types">
+        <xs:choice>
+            <xs:element name="unknown" type="xmms:value_unknown"/>
+            <xs:element name="int" type="xmms:value_int"/>
+            <xs:element name="string" type="xmms:value_string"/>
+            <xs:element name="binary" type="xmms:value_binary"/>
+            <xs:element name="collection" type="xmms:value_collection"/>
+            <xs:element name="list" type="xmms:value_list"/>
+            <xs:element name="dictionary" type="xmms:value_dictionary"/>
+            <xs:element name="enum-value" type="xmms:value_enum"/>
+        </xs:choice>
+    </xs:group>
+
+    <!-- Corresponds to an unknown xmmsv -->
+    <xs:complexType name="value_unknown"/>
+
+    <!-- Corresponds to XMMSV_TYPE_NONE -->
+    <xs:complexType name="value_none"/>
+
+    <!-- Corresponds to XMMSV_TYPE_INT32 -->
+    <xs:complexType name="value_int"/>
+
+    <!-- Corresponds to XMMSV_TYPE_ISTRING -->
+    <xs:complexType name="value_string"/>
+
+    <!-- Corresponds to XMMSV_TYPE_COLL -->
+    <xs:complexType name="value_collection"/>
+
+    <!-- Corresponds to XMMSV_TYPE_BIN -->
+    <xs:complexType name="value_binary"/>
+
+    <!-- Corresponds to XMMSV_TYPE_LIST -->
+    <xs:complexType name="value_list">
+        <xs:group ref="xmms:value_types" />
+    </xs:complexType>
+
+    <xs:complexType name="value_dictionary">
+        <xs:group ref="xmms:value_types" />
+    </xs:complexType>
+
+    <xs:complexType name="value_enum">
+        <xs:attribute name="name" type="xs:string"/>
+    </xs:complexType>
+</xs:schema>
