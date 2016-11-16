@@ -77,7 +77,7 @@ func collect(api *Query, template string) interface{} {
 
 func main() {
 	// TODO: flags
-	if len(os.Args) != 3 {
+	if len(os.Args) != 4 {
 		fmt.Println("Missing ipc.xml argument")
 		os.Exit(1)
 	}
@@ -100,10 +100,19 @@ func main() {
 
 	data := collect(api, target)
 
-	err = tpl.ExecuteTemplate(os.Stdout, target, data)
+	f, err := os.Create(os.Args[3])
 	if err != nil {
 		fmt.Println("Fail!", err)
 		os.Exit(1)
 		return
 	}
+
+	err = tpl.ExecuteTemplate(f, target, data)
+	if err != nil {
+		fmt.Println("Fail!", err)
+		os.Exit(1)
+		return
+	}
+
+	f.Close()
 }
