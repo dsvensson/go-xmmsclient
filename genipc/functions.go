@@ -17,6 +17,13 @@ type Function struct {
 	Deserializer   string
 }
 
+type Broadcast struct {
+	ObjectId   int
+	SignalId   int
+	Name       string
+	ReturnType string
+}
+
 func collectArguments(arguments []XmlArgument) []Arg {
 	var result []Arg
 
@@ -104,4 +111,24 @@ func collectFunctions(objects []XmlObject, offset int) []Function {
 	}
 
 	return functions
+}
+
+func collectBroadcasts(objects []XmlObject, offset int) []Broadcast {
+	var broadcasts []Broadcast
+
+	signalId := 0
+	for _, obj := range objects {
+		for _, broadcast := range obj.Broadcasts {
+			returnType, _, _ := collectResultConsumer(broadcast.ReturnValue)
+			broadcasts = append(broadcasts, Broadcast{
+				ObjectId:   offset,
+				SignalId:   signalId,
+				Name:       toCamelCase(obj.Name+"_"+broadcast.Name, true),
+				ReturnType: returnType,
+			})
+			signalId += 1
+		}
+	}
+
+	return broadcasts
 }

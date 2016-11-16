@@ -31,8 +31,9 @@ type XmlMethod struct {
 }
 
 type XmlObject struct {
-	Name    string      `xml:"name"`
-	Methods []XmlMethod `xml:"method"`
+	Name       string      `xml:"name"`
+	Methods    []XmlMethod `xml:"method"`
+	Broadcasts []XmlMethod `xml:"broadcast"`
 }
 
 type XmlEnum struct {

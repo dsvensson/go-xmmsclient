@@ -64,12 +64,38 @@ func (c *Client) {{.Name}}(
 }
 {{end}}`
 
+var broadcastTemplate = `// auto-generated
+package xmmsclient
+
+import (
+	"bytes"
+)
+
+type Broadcast struct {
+	result chan []byte
+}
+
+func (b *Broadcast) Next() (XmmsValue, error) {
+	__payload := <- b.result
+	__buffer := bytes.NewBuffer(__payload)
+	return tryDeserialize(__buffer)
+}
+
+{{range .}}
+func (c *Client) Broadcast{{.Name}}() Broadcast {
+	__chan := c.dispatch(0, 33, XmmsList{XmmsInt({{- .SignalId -}})})
+	return Broadcast{__chan}
+}
+{{end}}`
+
 func collect(api *Query, template string) interface{} {
 	switch template {
 	case "enums":
-		return collectEnums(api.Enums)
+		return collectEnums(api.Enums, api.Offset)
 	case "methods":
 		return collectFunctions(api.Objects, api.Offset)
+	case "broadcasts":
+		return collectBroadcasts(api.Objects, api.Offset)
 	default:
 		panic("unknown template target")
 	}
@@ -97,6 +123,7 @@ func main() {
 	tpl := template.New("").Funcs(funcMap)
 	tpl = template.Must(tpl.New("enums").Parse(enumTemplate))
 	tpl = template.Must(tpl.New("methods").Parse(methodTemplate))
+	tpl = template.Must(tpl.New("broadcasts").Parse(broadcastTemplate))
 
 	data := collect(api, target)
 

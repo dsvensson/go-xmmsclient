@@ -7,6 +7,18 @@ import (
 	"time"
 )
 
+func playlistChanges(client *xmmsclient.Client) {
+	bcast := client.BroadcastPlaylistChanged()
+	for {
+		value, err := bcast.Next()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		fmt.Println(value)
+	}
+}
+
 func repeat(client *xmmsclient.Client) {
 	for {
 		value, err := client.PlaylistListEntries(xmmsclient.ActivePlaylist)
@@ -39,6 +51,7 @@ func main() {
 	client.Dial("localhost:xmms2")
 
 	go repeat(client)
+	go playlistChanges(client)
 
 	time.Sleep(time.Millisecond * 5)
 
@@ -54,7 +67,7 @@ func main() {
 		}
 	}
 
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Second * 20)
 	fmt.Println(" close():")
 	client.Close()
 	fmt.Println(" sleep():")

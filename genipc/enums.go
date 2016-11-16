@@ -5,7 +5,7 @@ type EnumValue struct {
 	Value int
 }
 
-func collectEnums(enums []XmlEnum) map[string][]EnumValue {
+func collectEnums(enums []XmlEnum, offset int) map[string][]EnumValue {
 	var result = make(map[string][](EnumValue))
 
 	for _, enum := range enums {
@@ -16,6 +16,9 @@ func collectEnums(enums []XmlEnum) map[string][]EnumValue {
 				name = enum.Hint + "_" + member
 			} else {
 				name = enum.Name + "_" + member
+			}
+			if enum.Name == "IPC_COMMAND" {
+				index = offset
 			}
 			result[enum.Name] = append(result[enum.Name], EnumValue{toCamelCase(name, true), index})
 			index += 1

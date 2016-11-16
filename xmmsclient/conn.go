@@ -192,7 +192,7 @@ func (c *Client) dispatch(objectId uint32, commandId uint32, args XmmsValue) cha
 			objectId:  objectId,
 			commandId: commandId,
 		},
-		broadcast: false,
+		broadcast: objectId == 0,
 		args:      args,
 		result:    result,
 	}
