@@ -5,9 +5,10 @@ A first exploration of the Go programming language with a target of implementing
 ## What's in here?
 
 * `xmmsclient`
-    * The actual library that's budding.
+    * The actual library that's budding, lots of half-baked ideas while getting stuff usable.
 * `genipc`
     * A hacky code generator that takes [ipc.xml](https://github.com/xmms2/xmms2-devel/blob/master/src/ipc.xml) and generates the API.
+    * Update via `go generate ./xmmsclient`
 * `examples/test`
     * A weird test client that uses whatever is being worked on right now.
 
