@@ -69,7 +69,7 @@ func parseHeader(buf *bytes.Buffer) (*header, error) {
 	return &hdr, nil
 }
 
-func writeHeader(w io.ReadWriteCloser, hdr *header) error {
+func writeHeader(w io.Writer, hdr *header) error {
 	err := binary.Write(w, binary.BigEndian, hdr.objectId)
 	if err != nil {
 		return err
@@ -98,7 +98,7 @@ func (c *Client) nextSequenceNr() uint32 {
 	return c.sequenceNr
 }
 
-func (c *Client) reader(conn *net.TCPConn, inbound chan reply, errors chan error) {
+func (c *Client) reader(conn io.Reader, inbound chan reply, errors chan error) {
 	var buffer = make([]byte, 16)
 
 	for {
@@ -126,7 +126,7 @@ func (c *Client) reader(conn *net.TCPConn, inbound chan reply, errors chan error
 	}
 }
 
-func (c *Client) writer(conn *net.TCPConn, outbound chan message, errors chan error) {
+func (c *Client) writer(conn io.Writer, outbound chan message, errors chan error) {
 writer:
 	for {
 		select {
@@ -156,9 +156,6 @@ writer:
 			break writer
 		}
 	}
-
-	// TODO: Probably a better place for this.
-	conn.Close()
 }
 
 func errorToBytes(err string) []byte {
