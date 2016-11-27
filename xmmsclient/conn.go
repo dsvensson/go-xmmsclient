@@ -98,29 +98,35 @@ func (c *Client) nextSequenceNr() uint32 {
 	return c.sequenceNr
 }
 
-func (c *Client) reader(conn *net.TCPConn, inbound chan reply) {
+func (c *Client) reader(conn *net.TCPConn, inbound chan reply, errors chan error) {
 	var buffer = make([]byte, 16)
 
 	for {
 		_, err := io.ReadFull(conn, buffer)
 		if err != nil {
-			return
+			errors <- err
+			break
 		}
 
 		header, err := parseHeader(bytes.NewBuffer(buffer))
+		if err != nil {
+			errors <- err
+			break
+		}
 
 		payload := make([]byte, header.length)
 
 		_, err = io.ReadFull(conn, payload)
 		if err != nil {
-			return
+			errors <- err
+			break
 		}
 
 		inbound <- reply{header.sequenceNr, payload}
 	}
 }
 
-func (c *Client) writer(conn *net.TCPConn, outbound chan message) {
+func (c *Client) writer(conn *net.TCPConn, outbound chan message, errors chan error) {
 writer:
 	for {
 		select {
@@ -129,6 +135,7 @@ writer:
 
 			err := serializeXmmsValue(msg.args, &payload)
 			if err != nil {
+				errors <- err
 				break writer
 			}
 
@@ -136,11 +143,13 @@ writer:
 
 			err = writeHeader(conn, &msg.header)
 			if err != nil {
+				errors <- err
 				break writer
 			}
 
 			payload.WriteTo(conn)
 			if err != nil {
+				errors <- err
 				break writer
 			}
 		case <-c.shutdownIO:
@@ -152,7 +161,13 @@ writer:
 	conn.Close()
 }
 
-func (c *Client) router(inbound chan reply, outbound chan message) {
+func errorToBytes(err string) []byte {
+	var payload bytes.Buffer
+	serializeXmmsValue(XmmsError(err), &payload)
+	return payload.Bytes()
+}
+
+func (c *Client) router(inbound chan reply, outbound chan message, errors chan error) {
 	var registry = make(map[uint32](context))
 
 router:
@@ -174,14 +189,19 @@ router:
 			if !ctx.broadcast {
 				delete(registry, ctx.sequenceNr)
 			}
+		case err := <-errors:
+			payload := errorToBytes(err.Error())
+			for _, v := range registry {
+				v.result <- payload
+			}
+			break router
 		case <-c.shutdownRegistry:
+			payload := errorToBytes(io.EOF.Error())
+			for _, v := range registry {
+				v.result <- payload
+			}
 			break router
 		}
-	}
-
-	for _, v := range registry {
-		// TODO: Something better here, maybe serialize an XmmsError
-		v.result <- nil
 	}
 }
 
@@ -214,12 +234,13 @@ func (c *Client) Dial(url string) error {
 	c.shutdownIO = make(chan bool)
 	c.registry = make(chan message)
 
+	errors := make(chan error)
 	inbound := make(chan reply)
 	outbound := make(chan message)
 
-	go c.reader(conn, inbound)
-	go c.writer(conn, outbound)
-	go c.router(inbound, outbound)
+	go c.reader(conn, inbound, errors)
+	go c.writer(conn, outbound, errors)
+	go c.router(inbound, outbound, errors)
 
 	clientId, err := c.MainHello(24, c.clientName)
 	if err != nil {
