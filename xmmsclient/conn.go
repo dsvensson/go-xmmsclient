@@ -3,7 +3,6 @@ package xmmsclient
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"io"
 	"net"
 )
@@ -36,7 +35,6 @@ type reply struct {
 type Client struct {
 	sequenceNr uint32
 	clientName string
-	clientId   int
 
 	shutdownRegistry chan bool
 	shutdownIO       chan bool
@@ -216,15 +214,15 @@ func (c *Client) dispatch(objectId uint32, commandId uint32, args XmmsValue) cha
 	return result
 }
 
-func (c *Client) Dial(url string) error {
+func (c *Client) Dial(url string) (int, error) {
 	addr, err := net.ResolveTCPAddr("tcp", url)
 	if err != nil {
-		return err
+		return -1, err
 	}
 
 	conn, err := net.DialTCP("tcp", nil, addr)
 	if err != nil {
-		return err
+		return -1, err
 	}
 
 	c.shutdownRegistry = make(chan bool)
@@ -241,30 +239,19 @@ func (c *Client) Dial(url string) error {
 
 	clientId, err := c.MainHello(24, c.clientName)
 	if err != nil {
-		return err
+		return -1, err
 	}
 
-	c.clientId = int(clientId)
-
-	return nil
-}
-
-func (c *Client) ClientId() (int, error) {
-	if c.clientId == -1 {
-		return -1, errors.New("Client Id not initialized.")
-	}
-	return c.clientId, nil
+	return int(clientId), nil
 }
 
 func (c *Client) Close() {
 	c.shutdownRegistry <- true
 	c.shutdownIO <- true
-	c.clientId = -1
 }
 
 func NewClient(name string) *Client {
 	client := Client{
-		clientId:   -1,
 		clientName: name,
 	}
 

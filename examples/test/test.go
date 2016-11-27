@@ -49,7 +49,7 @@ func repeat(client *xmmsclient.Client) {
 func main() {
 	client := xmmsclient.NewClient("hello-from-go")
 
-	err := client.Dial("localhost:xmms2")
+	clientId, err := client.Dial("localhost:xmms2")
 	if err != nil {
 		fmt.Println("Error(Dial):", err)
 		return
@@ -71,6 +71,13 @@ func main() {
 			fmt.Printf("  main(): [%2v] %v::%v\n", index, xmmsclient.NamespacePlaylists, name)
 		}
 	}
+
+	clients, err := client.CourierGetConnectedClients()
+	if err != nil {
+		fmt.Println("Error(CourierGetConnectedClients):", err)
+		return
+	}
+	fmt.Println("Connected clients:", clients, "self:", clientId)
 
 	time.Sleep(time.Second * 20)
 	fmt.Println(" close():")
