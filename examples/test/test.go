@@ -12,7 +12,7 @@ func playlistChanges(client *xmmsclient.Client) {
 	for {
 		value, err := bcast.Next()
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("Error(PlaylistChanged):", err)
 			return
 		}
 		fmt.Println(value)
@@ -23,18 +23,19 @@ func repeat(client *xmmsclient.Client) {
 	for {
 		value, err := client.PlaylistListEntries(xmmsclient.ActivePlaylist)
 		if err != nil {
-			fmt.Println("Fail!", err)
+			fmt.Println("Error(PlaylistListEntries):", err)
 			return
 		}
 		for position, mid := range value {
 			propDict, err := client.MedialibGetInfo(mid)
 			if err != nil {
-				fmt.Println("Fail!", err)
+				fmt.Println("Error(GetInfo):", err)
 				return
 			}
 
 			dict, err := xmmsclient.PropDictToDictDefault(propDict)
 			if err != nil {
+				fmt.Println("Error(PropDict->Dict):", err)
 				return
 			}
 
@@ -48,7 +49,11 @@ func repeat(client *xmmsclient.Client) {
 func main() {
 	client := xmmsclient.NewClient("hello-from-go")
 
-	client.Dial("localhost:xmms2")
+	err := client.Dial("localhost:xmms2")
+	if err != nil {
+		fmt.Println("Error(Dial):", err)
+		return
+	}
 
 	go repeat(client)
 	go playlistChanges(client)
@@ -57,7 +62,7 @@ func main() {
 
 	value, err := client.CollectionList(xmmsclient.NamespacePlaylists)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Error(CollectionList):", err)
 		return
 	}
 
