@@ -96,11 +96,11 @@ func (c *Client) nextSequenceNr() uint32 {
 	return c.sequenceNr
 }
 
-func (c *Client) reader(conn io.Reader, inbound chan reply, errors chan error) {
+func (c *Client) reader(r io.Reader, inbound chan reply, errors chan error) {
 	var buffer = make([]byte, 16)
 
 	for {
-		_, err := io.ReadFull(conn, buffer)
+		_, err := io.ReadFull(r, buffer)
 		if err != nil {
 			errors <- err
 			break
@@ -114,7 +114,7 @@ func (c *Client) reader(conn io.Reader, inbound chan reply, errors chan error) {
 
 		payload := make([]byte, header.length)
 
-		_, err = io.ReadFull(conn, payload)
+		_, err = io.ReadFull(r, payload)
 		if err != nil {
 			errors <- err
 			break
@@ -124,7 +124,7 @@ func (c *Client) reader(conn io.Reader, inbound chan reply, errors chan error) {
 	}
 }
 
-func (c *Client) writer(conn io.Writer, outbound chan message, errors chan error) {
+func (c *Client) writer(w io.Writer, outbound chan message, errors chan error) {
 writer:
 	for {
 		select {
@@ -139,13 +139,13 @@ writer:
 
 			msg.header.length = uint32(len(payload.Bytes()))
 
-			err = writeHeader(conn, &msg.header)
+			err = writeHeader(w, &msg.header)
 			if err != nil {
 				errors <- err
 				break writer
 			}
 
-			payload.WriteTo(conn)
+			payload.WriteTo(w)
 			if err != nil {
 				errors <- err
 				break writer
