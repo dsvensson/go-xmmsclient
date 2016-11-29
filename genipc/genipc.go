@@ -37,6 +37,7 @@ import (
 )
 
 {{range .}}
+// {{.Doc}}
 func (c *Client) {{.Name}}(
 	{{- range $index, $arg := .Args}}
 		{{- if $index}}, {{end -}}
@@ -82,6 +83,7 @@ func (b *Broadcast) Next() (XmmsValue, error) {
 }
 
 {{range .}}
+// {{.Doc}}
 func (c *Client) Broadcast{{.Name}}() Broadcast {
 	__chan := c.dispatch(0, 33, XmmsList{XmmsInt({{- .SignalId -}})})
 	return Broadcast{__chan}

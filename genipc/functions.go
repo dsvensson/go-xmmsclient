@@ -2,6 +2,7 @@ package main
 
 type Arg struct {
 	Name     string
+	Doc      string
 	Type     string
 	XmmsType string
 }
@@ -10,6 +11,7 @@ type Function struct {
 	ObjectId       int
 	CommandId      int
 	Name           string
+	Doc            string
 	Args           []Arg
 	ResultConsumer string
 	ReturnType     string
@@ -21,6 +23,7 @@ type Broadcast struct {
 	ObjectId   int
 	SignalId   int
 	Name       string
+	Doc        string
 	ReturnType string
 }
 
@@ -53,6 +56,7 @@ func collectArguments(arguments []XmlArgument) []Arg {
 		}
 		result = append(result, Arg{
 			Name:     toCamelCase(arg.Name, false),
+			Doc:      arg.Doc,
 			Type:     argType,
 			XmmsType: xmmsType,
 		})
@@ -101,6 +105,7 @@ func collectFunctions(objects []XmlObject, offset int) []Function {
 				ObjectId:     objectId + 1,
 				CommandId:    commandId + offset,
 				Name:         toCamelCase(obj.Name+"_"+method.Name, true),
+				Doc:          method.Doc,
 				Args:         collectArguments(method.Arguments),
 				DefaultValue: defaultValue,
 				ReturnType:   returnType,
@@ -124,6 +129,7 @@ func collectBroadcasts(objects []XmlObject, offset int) []Broadcast {
 				ObjectId:   offset,
 				SignalId:   signalId,
 				Name:       toCamelCase(obj.Name+"_"+broadcast.Name, true),
+				Doc:        broadcast.Doc,
 				ReturnType: returnType,
 			})
 			signalId += 1
