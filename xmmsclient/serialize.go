@@ -9,13 +9,13 @@ func serializeInt(i XmmsInt, buffer *bytes.Buffer) error {
 	return binary.Write(buffer, binary.BigEndian, i)
 }
 
-func serializeString(s XmmsString, buffer *bytes.Buffer) error {
+func serializeString(s []byte, buffer *bytes.Buffer) error {
 	err := binary.Write(buffer, binary.BigEndian, uint32(len(s)+1))
 	if err != nil {
 		return err
 	}
 
-	err = binary.Write(buffer, binary.BigEndian, []byte(s))
+	err = binary.Write(buffer, binary.BigEndian, s)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func serializeDict(dict XmmsDict, buffer *bytes.Buffer) error {
 	}
 
 	for k, v := range dict {
-		err = serializeString(XmmsString(k), buffer)
+		err = serializeString([]byte(k), buffer)
 		if err != nil {
 			return err
 		}
@@ -80,7 +80,12 @@ func serializeXmmsValue(value XmmsValue, buffer *bytes.Buffer) (err error) {
 	case XmmsString:
 		err = binary.Write(buffer, binary.BigEndian, TypeString)
 		if err == nil {
-			serializeString(value.(XmmsString), buffer)
+			serializeString([]byte(value.(XmmsString)), buffer)
+		}
+	case XmmsError:
+		err = binary.Write(buffer, binary.BigEndian, TypeError)
+		if err == nil {
+			serializeString([]byte(value.(XmmsError)), buffer)
 		}
 	case XmmsDict:
 		err = binary.Write(buffer, binary.BigEndian, TypeDict)
