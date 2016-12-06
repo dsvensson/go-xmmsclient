@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"io"
 	"net"
+	"sync"
 )
 
 type context struct {
@@ -33,6 +34,8 @@ type reply struct {
 }
 
 type Client struct {
+	sync.RWMutex
+
 	sequenceNr uint32
 	clientName string
 
@@ -198,18 +201,42 @@ router:
 			break router
 		}
 	}
+
+	// Grab the RW-lock, close and nullify the command channel
+	// reference which will allow the draining loop to exit.
+
+	channel := c.registry
+
+	go func() {
+		c.Lock()
+		c.registry = nil
+		close(channel)
+		c.Unlock()
+	}()
+
+	payload := errorToBytes("Connection closed")
+	for msg := range channel {
+		msg.result <- payload
+	}
 }
 
 func (c *Client) dispatch(objectId uint32, commandId uint32, args XmmsValue) chan []byte {
-	result := make(chan []byte)
-	c.registry <- message{
-		header: header{
-			objectId:  objectId,
-			commandId: commandId,
-		},
-		broadcast: objectId == 0,
-		args:      args,
-		result:    result,
+	c.RLock()
+	defer c.RUnlock()
+
+	result := make(chan []byte, 1)
+	if c.registry == nil {
+		result <- errorToBytes("Connection closed")
+	} else {
+		c.registry <- message{
+			header: header{
+				objectId:  objectId,
+				commandId: commandId,
+			},
+			broadcast: objectId == 0,
+			args:      args,
+			result:    result,
+		}
 	}
 	return result
 }
@@ -225,6 +252,8 @@ func (c *Client) Dial(url string) (int, error) {
 		return -1, err
 	}
 
+	c.Lock()
+
 	c.shutdownRegistry = make(chan bool)
 	c.shutdownIO = make(chan bool)
 	c.registry = make(chan message)
@@ -236,6 +265,8 @@ func (c *Client) Dial(url string) (int, error) {
 	go c.reader(conn, inbound, errors)
 	go c.writer(conn, outbound, errors)
 	go c.router(inbound, outbound, errors)
+
+	c.Unlock()
 
 	clientId, err := c.MainHello(24, c.clientName)
 	if err != nil {
