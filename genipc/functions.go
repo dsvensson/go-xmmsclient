@@ -30,36 +30,33 @@ type Broadcast struct {
 func collectArguments(arguments []XmlArgument) []Arg {
 	var result []Arg
 
-	for _, arg := range arguments {
-		var argType string
-		var xmmsType string
-		switch arg.Type[0] {
+	for _, entry := range arguments {
+		arg := Arg{
+			Name: toCamelCase(entry.Name, false),
+			Doc:  entry.Doc,
+		}
+		switch entry.Type[0] {
 		case "enum-value":
-			argType = "int"
-			xmmsType = "XmmsInt"
+			arg.Type = "int"
+			arg.XmmsType = "XmmsInt"
 		case "int":
-			argType = "int"
-			xmmsType = "XmmsInt"
+			arg.Type = "int"
+			arg.XmmsType = "XmmsInt"
 		case "string":
-			argType = "string"
-			xmmsType = "XmmsString"
+			arg.Type = "string"
+			arg.XmmsType = "XmmsString"
 		case "binary":
-			argType = "XmmsValue"
+			arg.Type = "XmmsValue"
 		case "list":
-			argType = "XmmsList" // TODO: Convert to array or vararg
+			arg.Type = "XmmsList" // TODO: Convert to array or vararg
 		case "dictionary":
-			argType = "XmmsDict"
+			arg.Type = "XmmsDict"
 		case "collection":
-			argType = "XmmsValue" // TODO: Implement Collections
+			arg.Type = "XmmsValue" // TODO: Implement Collections
 		default:
 			panic("Unexpected type")
 		}
-		result = append(result, Arg{
-			Name:     toCamelCase(arg.Name, false),
-			Doc:      arg.Doc,
-			Type:     argType,
-			XmmsType: xmmsType,
-		})
+		result = append(result, arg)
 	}
 
 	return result
