@@ -7,6 +7,12 @@ type Arg struct {
 	XmmsType string
 }
 
+type Return struct {
+	Type         string
+	Default      string
+	Deserializer string
+}
+
 type Function struct {
 	ObjectId       int
 	CommandId      int
@@ -14,18 +20,24 @@ type Function struct {
 	Doc            string
 	Args           []Arg
 	ResultConsumer string
-	ReturnType     string
-	DefaultValue   string
-	Deserializer   string
+	Return         Return
 }
 
 type Broadcast struct {
-	ObjectId   int
-	SignalId   int
-	Name       string
-	Doc        string
-	ReturnType string
+	ObjectId int
+	SignalId int
+	Name     string
+	Doc      string
+	Return   Return
 }
+
+const (
+	DefaultInt    = "0"
+	DefaultString = "\"\""
+	DefaultPtr    = "nil"
+	DefaultList   = "XmmsList{}"
+	DefaultDict   = "XmmsDict{}"
+)
 
 func collectArguments(arguments []XmlArgument) []Arg {
 	var result []Arg
@@ -62,34 +74,37 @@ func collectArguments(arguments []XmlArgument) []Arg {
 	return result
 }
 
-func collectResultConsumer(signature XmlReturnValue) (string, string, string) {
+func collectResultConsumer(signature XmlReturnValue) Return {
 	if len(signature.Type) == 0 {
 		// TODO: Deal with void functions.
-		return "XmmsValue", "nil", ""
+		return Return{Type: "XmmsValue", Default: DefaultPtr}
 	}
 	switch signature.Type[0] {
 	case "enum-value":
-		return "XmmsInt", "0", ""
+		return Return{Type: "XmmsInt", Default: DefaultInt}
 	case "int":
-		return "XmmsInt", "0", ""
+		return Return{Type: "XmmsInt", Default: DefaultInt}
 	case "string":
-		return "XmmsString", "\"\"", ""
+		return Return{Type: "XmmsString", Default: DefaultString}
 	case "list":
 		if len(signature.Type) > 1 {
 			switch signature.Type[1] {
 			case "int":
-				return "[]int", "nil", "tryDeserializeIntList"
+				return Return{
+					Type: "[]int", Default: DefaultPtr, Deserializer: "tryDeserializeIntList"}
 			case "string":
-				return "[]string", "nil", "tryDeserializeStringList"
+				return Return{
+					Type: "[]string", Default: DefaultPtr, Deserializer: "tryDeserializeStringList"}
 			case "dictionary":
-				return "[]XmmsDict", "nil", "tryDeserializeDictList"
+				return Return{
+					Type: "[]XmmsDict", Default: DefaultPtr, Deserializer: "tryDeserializeDictList"}
 			}
 		}
-		return "XmmsList", "XmmsList{}", ""
+		return Return{Type: "XmmsList", Default: DefaultList}
 	case "dictionary":
-		return "XmmsDict", "XmmsDict{}", ""
+		return Return{Type: "XmmsDict", Default: DefaultDict}
 	default:
-		return "XmmsValue", "nil", ""
+		return Return{Type: "XmmsValue", Default: DefaultPtr}
 	}
 }
 
@@ -97,16 +112,13 @@ func collectFunctions(objects []XmlObject, offset int) []Function {
 	var functions []Function
 	for objectId, obj := range objects {
 		for commandId, method := range obj.Methods {
-			returnType, defaultValue, deserializer := collectResultConsumer(method.ReturnValue)
 			functions = append(functions, Function{
-				ObjectId:     objectId + 1,
-				CommandId:    commandId + offset,
-				Name:         toCamelCase(obj.Name+"_"+method.Name, true),
-				Doc:          method.Doc,
-				Args:         collectArguments(method.Arguments),
-				DefaultValue: defaultValue,
-				ReturnType:   returnType,
-				Deserializer: deserializer,
+				ObjectId:  objectId + 1,
+				CommandId: commandId + offset,
+				Name:      toCamelCase(obj.Name+"_"+method.Name, true),
+				Doc:       method.Doc,
+				Args:      collectArguments(method.Arguments),
+				Return:    collectResultConsumer(method.ReturnValue),
 			})
 		}
 		objectId += 1
@@ -121,13 +133,12 @@ func collectBroadcasts(objects []XmlObject, offset int) []Broadcast {
 	signalId := 0
 	for _, obj := range objects {
 		for _, broadcast := range obj.Broadcasts {
-			returnType, _, _ := collectResultConsumer(broadcast.ReturnValue)
 			broadcasts = append(broadcasts, Broadcast{
-				ObjectId:   offset,
-				SignalId:   signalId,
-				Name:       toCamelCase(obj.Name+"_"+broadcast.Name, true),
-				Doc:        broadcast.Doc,
-				ReturnType: returnType,
+				ObjectId: offset,
+				SignalId: signalId,
+				Name:     toCamelCase(obj.Name+"_"+broadcast.Name, true),
+				Doc:      broadcast.Doc,
+				Return:   collectResultConsumer(broadcast.ReturnValue),
 			})
 			signalId += 1
 		}

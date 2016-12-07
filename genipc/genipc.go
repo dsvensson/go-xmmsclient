@@ -42,7 +42,7 @@ func (c *Client) {{.Name}}(
 	{{- range $index, $arg := .Args}}
 		{{- if $index}}, {{end -}}
 		{{- $arg.Name}} {{$arg.Type -}}
-	{{end -}}) ({{.ReturnType}}, error) {
+	{{end -}}) ({{.Return.Type}}, error) {
 	__payload := <-c.dispatch({{.ObjectId}}, {{.CommandId}}, XmmsList{
 	{{- range $index, $arg := .Args -}}
 		{{- if $index}}, {{end -}}
@@ -53,14 +53,14 @@ func (c *Client) {{.Name}}(
 		{{- end -}}
 	{{- end -}}})
 	__buffer := bytes.NewBuffer(__payload)
-	{{ if len .Deserializer -}}
-	return {{.Deserializer}}(__buffer)
+	{{ if len .Return.Deserializer -}}
+	return {{.Return.Deserializer}}(__buffer)
 	{{- else -}}
 	__value, __err := tryDeserialize(__buffer)
 	if __err != nil {
-		return {{.DefaultValue}}, __err
+		return {{.Return.Default}}, __err
 	}
-	return __value.({{.ReturnType}}), nil
+	return __value.({{.Return.Type}}), nil
 	{{- end}}
 }
 {{end}}`
