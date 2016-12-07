@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 )
 
+type listProducer func(buffer *bytes.Buffer) error
+
 func serializeInt(i XmmsInt, buffer *bytes.Buffer) error {
 	return binary.Write(buffer, binary.BigEndian, i)
 }
@@ -28,25 +30,32 @@ func serializeString(s []byte, buffer *bytes.Buffer) error {
 	return nil
 }
 
-func serializeList(l XmmsList, buffer *bytes.Buffer) error {
-	err := binary.Write(buffer, binary.BigEndian, TypeNone)
+func serializeAnyList(buffer *bytes.Buffer, length int, restrict uint32, producer listProducer) error {
+	err := binary.Write(buffer, binary.BigEndian, restrict)
 	if err != nil {
 		return err
 	}
 
-	err = binary.Write(buffer, binary.BigEndian, uint32(len(l)))
+	err = binary.Write(buffer, binary.BigEndian, uint32(length))
 	if err != nil {
 		return err
 	}
 
-	for _, entry := range l {
-		err = serializeXmmsValue(entry, buffer)
-		if err != nil {
-			return err
-		}
-	}
+	return producer(buffer)
+}
 
-	return nil
+func serializeList(list XmmsList, buffer *bytes.Buffer) error {
+	return serializeAnyList(buffer, len(list), TypeNone,
+		func(buffer *bytes.Buffer) error {
+			for _, entry := range list {
+				err := serializeXmmsValue(entry, buffer)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+	)
 }
 
 func serializeDict(dict XmmsDict, buffer *bytes.Buffer) error {
