@@ -23,12 +23,7 @@ func TestPropDictToDictGood(t *testing.T) {
 }
 
 func TestPropDictToDictWrongTypes(t *testing.T) {
-	_, err := PropDictToDictDefault(XmmsInt(0x2a))
-	if err == nil {
-		t.Fatal("Error:", err)
-	}
-
-	_, err = PropDictToDictDefault(XmmsDict{"foo": XmmsString("bar")})
+	_, err := PropDictToDictDefault(XmmsDict{"foo": XmmsString("bar")})
 	if err == nil {
 		t.Fatal("Error:", err)
 	}

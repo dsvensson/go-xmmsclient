@@ -37,14 +37,9 @@ func match(sourcePrefs []string, source string) int {
 // Flatten a {key: {source: value}} to {key: value} based on source preferences.
 // Source preferences are defined as a list of strings that may end with '*' to
 // match any suffix.
-func PropDictToDict(sourcePrefs []string, inputValue XmmsValue) (XmmsDict, error) {
-	inputDict, ok := inputValue.(XmmsDict)
-	if !ok {
-		return nil, errors.New("Input not a XmmsDict->XmmsDict->XmmsValue")
-	}
-
+func PropDictToDict(inputValue XmmsDict, sourcePrefs []string) (XmmsDict, error) {
 	result := XmmsDict{}
-	for key, innerValue := range inputDict {
+	for key, innerValue := range inputValue {
 		innerDict, ok := innerValue.(XmmsDict)
 		if !ok {
 			return nil, errors.New("Input not a XmmsDict->XmmsDict->XmmsValue")
@@ -66,6 +61,6 @@ func PropDictToDict(sourcePrefs []string, inputValue XmmsValue) (XmmsDict, error
 // Flatten a PropDict using default source preferences:
 //  ["server", "client/*", "plugin/playlist", "plugin/segment",
 //   "plugin/nibbler", "plugin/id3v2", "plugin/*", "*"]
-func PropDictToDictDefault(input XmmsValue) (XmmsDict, error) {
-	return PropDictToDict(defaultSourcePrefs, input)
+func PropDictToDictDefault(input XmmsDict) (XmmsDict, error) {
+	return PropDictToDict(input, defaultSourcePrefs)
 }
