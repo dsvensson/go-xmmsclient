@@ -128,32 +128,32 @@ func serializeXmmsValue(value XmmsValue, buffer *bytes.Buffer) (err error) {
 	case XmmsInt:
 		err = binary.Write(buffer, binary.BigEndian, TypeInt64)
 		if err == nil {
-			serializeInt(value.(XmmsInt), buffer)
+			return serializeInt(value.(XmmsInt), buffer)
 		}
 	case XmmsString:
 		err = binary.Write(buffer, binary.BigEndian, TypeString)
 		if err == nil {
-			serializeString([]byte(value.(XmmsString)), buffer)
+			return serializeString([]byte(value.(XmmsString)), buffer)
 		}
 	case XmmsError:
 		err = binary.Write(buffer, binary.BigEndian, TypeError)
 		if err == nil {
-			serializeString([]byte(value.(XmmsError)), buffer)
+			return serializeString([]byte(value.(XmmsError)), buffer)
 		}
 	case XmmsDict:
 		err = binary.Write(buffer, binary.BigEndian, TypeDict)
 		if err == nil {
-			serializeDict(value.(XmmsDict), buffer)
+			return serializeDict(value.(XmmsDict), buffer)
 		}
 	case XmmsList:
 		err = binary.Write(buffer, binary.BigEndian, TypeList)
 		if err == nil {
-			serializeList(value.(XmmsList), buffer)
+			return serializeList(value.(XmmsList), buffer)
 		}
 	case XmmsColl:
 		err = binary.Write(buffer, binary.BigEndian, TypeColl)
 		if err == nil {
-			serializeColl(value.(XmmsColl), buffer)
+			return serializeColl(value.(XmmsColl), buffer)
 		}
 	}
 	return nil
