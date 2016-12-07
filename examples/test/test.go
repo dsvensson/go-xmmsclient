@@ -79,9 +79,9 @@ func main() {
 	}
 	fmt.Println("Connected clients:", clients, "self:", clientId)
 
-	time.Sleep(time.Second * 20)
+	time.Sleep(time.Second * 3)
 	fmt.Println(" close():")
 	client.Close()
 	fmt.Println(" sleep():")
-	time.Sleep(time.Second * 1)
+	time.Sleep(time.Second * 2)
 }
