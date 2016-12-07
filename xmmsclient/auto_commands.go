@@ -47,7 +47,7 @@ func (c *Client) MainStats() (XmmsDict, error) {
 }
 
 // Queries ids from a collection and replaces the playlist with the result.
-func (c *Client) PlaylistReplace(name string, replacement XmmsValue, action int) (XmmsValue, error) {
+func (c *Client) PlaylistReplace(name string, replacement XmmsColl, action int) (XmmsValue, error) {
 	__payload := <-c.dispatch(2, 32, XmmsList{XmmsString(name), replacement, XmmsInt(action)})
 	__buffer := bytes.NewBuffer(__payload)
 	__value, __err := tryDeserialize(__buffer)
@@ -91,7 +91,7 @@ func (c *Client) PlaylistAddUrl(name string, url string) (XmmsValue, error) {
 }
 
 // Adds the contents of a collection to the given playlist.
-func (c *Client) PlaylistAddCollection(name string, collection XmmsValue) (XmmsValue, error) {
+func (c *Client) PlaylistAddCollection(name string, collection XmmsColl) (XmmsValue, error) {
 	__payload := <-c.dispatch(2, 36, XmmsList{XmmsString(name), collection})
 	__buffer := bytes.NewBuffer(__payload)
 	__value, __err := tryDeserialize(__buffer)
@@ -164,7 +164,7 @@ func (c *Client) PlaylistInsertUrl(name string, position int, url string) (XmmsV
 }
 
 // Inserts the contents of a collection into the given playlist.
-func (c *Client) PlaylistInsertCollection(name string, position int, collection XmmsValue) (XmmsValue, error) {
+func (c *Client) PlaylistInsertCollection(name string, position int, collection XmmsColl) (XmmsValue, error) {
 	__payload := <-c.dispatch(2, 43, XmmsList{XmmsString(name), XmmsInt(position), collection})
 	__buffer := bytes.NewBuffer(__payload)
 	__value, __err := tryDeserialize(__buffer)
@@ -501,7 +501,7 @@ func (c *Client) CollectionList(namespace string) ([]string, error) {
 }
 
 // Save the given collection in the DAG under the given name in the given namespace.
-func (c *Client) CollectionSave(name string, namespace string, collection XmmsValue) (XmmsValue, error) {
+func (c *Client) CollectionSave(name string, namespace string, collection XmmsColl) (XmmsValue, error) {
 	__payload := <-c.dispatch(6, 34, XmmsList{XmmsString(name), XmmsString(namespace), collection})
 	__buffer := bytes.NewBuffer(__payload)
 	__value, __err := tryDeserialize(__buffer)
@@ -541,7 +541,7 @@ func (c *Client) CollectionRename(name string, newName string, namespace string)
 }
 
 // FIXME.
-func (c *Client) CollectionQuery(collection XmmsValue, fetch XmmsDict) (XmmsValue, error) {
+func (c *Client) CollectionQuery(collection XmmsColl, fetch XmmsDict) (XmmsValue, error) {
 	__payload := <-c.dispatch(6, 38, XmmsList{collection, fetch})
 	__buffer := bytes.NewBuffer(__payload)
 	__value, __err := tryDeserialize(__buffer)
@@ -552,7 +552,7 @@ func (c *Client) CollectionQuery(collection XmmsValue, fetch XmmsDict) (XmmsValu
 }
 
 // FIXME.
-func (c *Client) CollectionQueryInfos(collection XmmsValue, limitStart int, limitLength int, properties XmmsList, groupBy XmmsList) ([]XmmsDict, error) {
+func (c *Client) CollectionQueryInfos(collection XmmsColl, limitStart int, limitLength int, properties XmmsList, groupBy XmmsList) ([]XmmsDict, error) {
 	__payload := <-c.dispatch(6, 39, XmmsList{collection, XmmsInt(limitStart), XmmsInt(limitLength), properties, groupBy})
 	__buffer := bytes.NewBuffer(__payload)
 	return tryDeserializeDictList(__buffer)
