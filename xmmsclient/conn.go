@@ -3,6 +3,7 @@ package xmmsclient
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"io"
 	"net"
 	"sync"
@@ -241,7 +242,38 @@ func (c *Client) dispatch(objectId uint32, commandId uint32, args XmmsValue) cha
 	return result
 }
 
+func (c *Client) sendHello() (int, error) {
+	result := make(chan []byte)
+
+	c.registry <- message{
+		header: header{
+			objectId:  1,
+			commandId: 32,
+		},
+		broadcast: false,
+		args:      XmmsList{XmmsInt(IpcVersion), XmmsString(c.clientName)},
+		result:    result,
+	}
+
+	buffer := bytes.NewBuffer(<-result)
+
+	value, err := tryDeserialize(buffer)
+	if err != nil {
+		return -1, err
+	}
+
+	clientId, ok := value.(XmmsInt)
+	if !ok {
+		return -1, errors.New("Bad reply from server")
+	}
+
+	return int(clientId), nil
+}
+
 func (c *Client) Dial(url string) (int, error) {
+	c.Lock()
+	defer c.Unlock()
+
 	addr, err := net.ResolveTCPAddr("tcp", url)
 	if err != nil {
 		return -1, err
@@ -251,8 +283,6 @@ func (c *Client) Dial(url string) (int, error) {
 	if err != nil {
 		return -1, err
 	}
-
-	c.Lock()
 
 	c.shutdownRegistry = make(chan bool)
 	c.shutdownIO = make(chan bool)
@@ -266,14 +296,13 @@ func (c *Client) Dial(url string) (int, error) {
 	go c.writer(conn, outbound, errors)
 	go c.router(inbound, outbound, errors)
 
-	c.Unlock()
-
-	clientId, err := c.MainHello(24, c.clientName)
+	clientId, err := c.sendHello()
 	if err != nil {
+		c.Close()
 		return -1, err
 	}
 
-	return int(clientId), nil
+	return clientId, nil
 }
 
 func (c *Client) Close() {
