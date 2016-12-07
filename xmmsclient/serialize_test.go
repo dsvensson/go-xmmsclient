@@ -20,7 +20,7 @@ func TestSerializeInt(t *testing.T) {
 	}
 	var buffer bytes.Buffer
 
-	var err = serializeXmmsValue(XmmsInt(42), &buffer)
+	var err = serializeXmmsValue(&buffer, XmmsInt(42))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +36,7 @@ func TestSerializeString(t *testing.T) {
 	}
 	var buffer bytes.Buffer
 
-	var err = serializeXmmsValue(XmmsString("test"), &buffer)
+	var err = serializeXmmsValue(&buffer, XmmsString("test"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +52,7 @@ func TestSerializeError(t *testing.T) {
 	}
 	var buffer bytes.Buffer
 
-	var err = serializeXmmsValue(XmmsError("test"), &buffer)
+	var err = serializeXmmsValue(&buffer, XmmsError("test"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +73,7 @@ func TestSerializeList(t *testing.T) {
 	}
 	var buffer bytes.Buffer
 
-	var err = serializeXmmsValue(XmmsList{XmmsInt(42), XmmsString("test")}, &buffer)
+	var err = serializeXmmsValue(&buffer, XmmsList{XmmsInt(42), XmmsString("test")})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -92,7 +92,7 @@ func TestSerializeDict(t *testing.T) {
 	}
 	var buffer bytes.Buffer
 
-	var err = serializeXmmsValue(XmmsDict{"int": XmmsInt(42)}, &buffer)
+	var err = serializeXmmsValue(&buffer, XmmsDict{"int": XmmsInt(42)})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,7 +137,7 @@ func TestSerializeColl(t *testing.T) {
 		},
 	}
 
-	var err = serializeXmmsValue(match, &buffer)
+	var err = serializeXmmsValue(&buffer, match)
 	if err != nil {
 		t.Fatal(err)
 	}

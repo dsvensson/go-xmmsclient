@@ -134,7 +134,7 @@ writer:
 		case msg := <-outbound:
 			var payload bytes.Buffer
 
-			err := serializeXmmsValue(msg.args, &payload)
+			err := serializeXmmsValue(&payload, msg.args)
 			if err != nil {
 				errors <- err
 				break writer
@@ -161,7 +161,7 @@ writer:
 
 func errorToBytes(err string) []byte {
 	var payload bytes.Buffer
-	serializeXmmsValue(XmmsError(err), &payload)
+	serializeXmmsValue(&payload, XmmsError(err))
 	return payload.Bytes()
 }
 

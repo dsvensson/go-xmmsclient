@@ -7,11 +7,11 @@ import (
 
 type listProducer func(buffer *bytes.Buffer) error
 
-func serializeInt(i XmmsInt, buffer *bytes.Buffer) error {
+func serializeInt(buffer *bytes.Buffer, i XmmsInt) error {
 	return binary.Write(buffer, binary.BigEndian, i)
 }
 
-func serializeString(s []byte, buffer *bytes.Buffer) error {
+func serializeString(buffer *bytes.Buffer, s []byte) error {
 	err := binary.Write(buffer, binary.BigEndian, uint32(len(s)+1))
 	if err != nil {
 		return err
@@ -44,11 +44,11 @@ func serializeAnyList(buffer *bytes.Buffer, length int, restrict uint32, produce
 	return producer(buffer)
 }
 
-func serializeList(list XmmsList, buffer *bytes.Buffer) error {
+func serializeList(buffer *bytes.Buffer, list XmmsList) error {
 	return serializeAnyList(buffer, len(list), TypeNone,
 		func(buffer *bytes.Buffer) error {
 			for _, entry := range list {
-				err := serializeXmmsValue(entry, buffer)
+				err := serializeXmmsValue(buffer, entry)
 				if err != nil {
 					return err
 				}
@@ -58,19 +58,19 @@ func serializeList(list XmmsList, buffer *bytes.Buffer) error {
 	)
 }
 
-func serializeDict(dict XmmsDict, buffer *bytes.Buffer) error {
+func serializeDict(buffer *bytes.Buffer, dict XmmsDict) error {
 	err := binary.Write(buffer, binary.BigEndian, uint32(len(dict)))
 	if err != nil {
 		return err
 	}
 
 	for k, v := range dict {
-		err = serializeString([]byte(k), buffer)
+		err = serializeString(buffer, []byte(k))
 		if err != nil {
 			return err
 		}
 
-		err = serializeXmmsValue(v, buffer)
+		err = serializeXmmsValue(buffer, v)
 		if err != nil {
 			return err
 		}
@@ -79,13 +79,13 @@ func serializeDict(dict XmmsDict, buffer *bytes.Buffer) error {
 	return nil
 }
 
-func serializeColl(coll XmmsColl, buffer *bytes.Buffer) error {
+func serializeColl(buffer *bytes.Buffer, coll XmmsColl) error {
 	err := binary.Write(buffer, binary.BigEndian, coll.Type)
 	if err != nil {
 		return err
 	}
 
-	err = serializeDict(coll.Attributes, buffer)
+	err = serializeDict(buffer, coll.Attributes)
 	if err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ func serializeColl(coll XmmsColl, buffer *bytes.Buffer) error {
 	err = serializeAnyList(buffer, len(coll.Operands), TypeColl,
 		func(buffer *bytes.Buffer) error {
 			for _, operand := range coll.Operands {
-				err := serializeColl(operand, buffer)
+				err := serializeColl(buffer, operand)
 				if err != nil {
 					return err
 				}
@@ -123,37 +123,37 @@ func serializeColl(coll XmmsColl, buffer *bytes.Buffer) error {
 	return nil
 }
 
-func serializeXmmsValue(value XmmsValue, buffer *bytes.Buffer) (err error) {
+func serializeXmmsValue(buffer *bytes.Buffer, value XmmsValue) (err error) {
 	switch value.(type) {
 	case XmmsInt:
 		err = binary.Write(buffer, binary.BigEndian, TypeInt64)
 		if err == nil {
-			return serializeInt(value.(XmmsInt), buffer)
+			return serializeInt(buffer, value.(XmmsInt))
 		}
 	case XmmsString:
 		err = binary.Write(buffer, binary.BigEndian, TypeString)
 		if err == nil {
-			return serializeString([]byte(value.(XmmsString)), buffer)
+			return serializeString(buffer, []byte(value.(XmmsString)))
 		}
 	case XmmsError:
 		err = binary.Write(buffer, binary.BigEndian, TypeError)
 		if err == nil {
-			return serializeString([]byte(value.(XmmsError)), buffer)
+			return serializeString(buffer, []byte(value.(XmmsError)))
 		}
 	case XmmsDict:
 		err = binary.Write(buffer, binary.BigEndian, TypeDict)
 		if err == nil {
-			return serializeDict(value.(XmmsDict), buffer)
+			return serializeDict(buffer, value.(XmmsDict))
 		}
 	case XmmsList:
 		err = binary.Write(buffer, binary.BigEndian, TypeList)
 		if err == nil {
-			return serializeList(value.(XmmsList), buffer)
+			return serializeList(buffer, value.(XmmsList))
 		}
 	case XmmsColl:
 		err = binary.Write(buffer, binary.BigEndian, TypeColl)
 		if err == nil {
-			return serializeColl(value.(XmmsColl), buffer)
+			return serializeColl(buffer, value.(XmmsColl))
 		}
 	}
 	return nil
