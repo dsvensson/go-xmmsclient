@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/dsvensson/go-xmmsclient/xmmsclient"
+	xc "github.com/dsvensson/go-xmmsclient/xmmsclient"
 	"strings"
 	"time"
 )
 
-func playlistChanges(client *xmmsclient.Client) {
+func playlistChanges(client *xc.Client) {
 	bcast := client.BroadcastPlaylistChanged()
 	for {
 		value, err := bcast.Next()
@@ -19,9 +19,9 @@ func playlistChanges(client *xmmsclient.Client) {
 	}
 }
 
-func repeat(client *xmmsclient.Client) {
+func repeat(client *xc.Client) {
 	for {
-		value, err := client.PlaylistListEntries(xmmsclient.ActivePlaylist)
+		value, err := client.PlaylistListEntries(xc.ActivePlaylist)
 		if err != nil {
 			fmt.Println("Error(PlaylistListEntries):", err)
 			return
@@ -33,7 +33,7 @@ func repeat(client *xmmsclient.Client) {
 				return
 			}
 
-			dict, err := xmmsclient.PropDictToDictDefault(propDict)
+			dict, err := xc.PropDictToDictDefault(propDict)
 			if err != nil {
 				fmt.Println("Error(PropDict->Dict):", err)
 				return
@@ -47,7 +47,7 @@ func repeat(client *xmmsclient.Client) {
 }
 
 func main() {
-	client := xmmsclient.NewClient("hello-from-go")
+	client := xc.NewClient("hello-from-go")
 
 	clientId, err := client.Dial("localhost:xmms2")
 	if err != nil {
@@ -60,7 +60,7 @@ func main() {
 
 	time.Sleep(time.Millisecond * 5)
 
-	value, err := client.CollectionList(xmmsclient.NamespacePlaylists)
+	value, err := client.CollectionList(xc.NamespacePlaylists)
 	if err != nil {
 		fmt.Println("Error(CollectionList):", err)
 		return
@@ -68,7 +68,7 @@ func main() {
 
 	for index, name := range value {
 		if !strings.HasPrefix(name, "_") {
-			fmt.Printf("  main(): [%2v] %v::%v\n", index, xmmsclient.NamespacePlaylists, name)
+			fmt.Printf("  main(): [%2v] %v::%v\n", index, xc.NamespacePlaylists, name)
 		}
 	}
 
@@ -79,9 +79,9 @@ func main() {
 	}
 	fmt.Println("Connected clients:", clients, "self:", clientId)
 
-	coll := xmmsclient.XmmsColl{Type: xmmsclient.CollectionTypeUniverse}
-	fetch := xmmsclient.XmmsList{xmmsclient.XmmsString("artist"), xmmsclient.XmmsString("album")}
-	group := xmmsclient.XmmsList{xmmsclient.XmmsString("album")}
+	coll := xc.XmmsColl{Type: xc.CollectionTypeUniverse}
+	fetch := xc.XmmsList{xc.XmmsString("artist"), xc.XmmsString("album")}
+	group := xc.XmmsList{xc.XmmsString("album")}
 
 	matches, err := client.CollectionQueryInfos(coll, 0, 0, fetch, group)
 	if err != nil {
