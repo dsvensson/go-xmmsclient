@@ -44,6 +44,22 @@ func TestSerializeString(t *testing.T) {
 	checkBuffer(t, expected, buffer.Bytes())
 }
 
+func TestSerializeError(t *testing.T) {
+	var expected = []byte{
+		0x00, 0x00, 0x00, 0x01,
+		0x00, 0x00, 0x00, 0x05,
+		0x74, 0x65, 0x73, 0x74, 0x00,
+	}
+	var buffer bytes.Buffer
+
+	var err = serializeXmmsValue(XmmsError("test"), &buffer)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	checkBuffer(t, expected, buffer.Bytes())
+}
+
 func TestSerializeList(t *testing.T) {
 	var expected = []byte{
 		0x00, 0x00, 0x00, 0x06,
