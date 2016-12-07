@@ -79,6 +79,17 @@ func main() {
 	}
 	fmt.Println("Connected clients:", clients, "self:", clientId)
 
+	coll := xmmsclient.XmmsColl{Type: xmmsclient.CollectionTypeUniverse}
+	fetch := xmmsclient.XmmsList{xmmsclient.XmmsString("artist"), xmmsclient.XmmsString("album")}
+	group := xmmsclient.XmmsList{xmmsclient.XmmsString("album")}
+
+	matches, err := client.CollectionQueryInfos(coll, 0, 0, fetch, group)
+	if err != nil {
+		fmt.Println("Error(CollectionQueryInfos):", err)
+		return
+	}
+	fmt.Println("All albums:", matches)
+
 	time.Sleep(time.Second * 3)
 	fmt.Println(" close():")
 	client.Close()
