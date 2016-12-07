@@ -64,7 +64,7 @@ func collectArguments(arguments []XmlArgument) []Arg {
 		case "dictionary":
 			arg.Type = "XmmsDict"
 		case "collection":
-			arg.Type = "XmmsValue" // TODO: Implement Collections
+			arg.Type = "XmmsColl"
 		default:
 			panic("Unexpected type")
 		}
