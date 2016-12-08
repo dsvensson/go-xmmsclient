@@ -10,9 +10,8 @@ import (
 )
 
 type context struct {
-	result     chan []byte
-	sequenceNr uint32
-	broadcast  bool
+	result    chan reply
+	broadcast bool
 }
 
 type header struct {
@@ -26,12 +25,13 @@ type message struct {
 	header    header
 	broadcast bool
 	args      XmmsValue
-	result    chan []byte
+	result    chan reply
 }
 
 type reply struct {
 	sequenceNr uint32
 	payload    []byte
+	err        error
 }
 
 type Client struct {
@@ -100,19 +100,19 @@ func (c *Client) nextSequenceNr() uint32 {
 	return c.sequenceNr
 }
 
-func (c *Client) reader(r io.Reader, inbound chan reply, errors chan error) {
+func (c *Client) reader(r io.Reader, inbound chan reply) {
 	var buffer = make([]byte, 16)
 
 	for {
 		_, err := io.ReadFull(r, buffer)
 		if err != nil {
-			errors <- err
+			inbound <- reply{err: err}
 			break
 		}
 
 		header, err := parseHeader(bytes.NewBuffer(buffer))
 		if err != nil {
-			errors <- err
+			inbound <- reply{err: err}
 			break
 		}
 
@@ -120,11 +120,11 @@ func (c *Client) reader(r io.Reader, inbound chan reply, errors chan error) {
 
 		_, err = io.ReadFull(r, payload)
 		if err != nil {
-			errors <- err
+			inbound <- reply{err: err}
 			break
 		}
 
-		inbound <- reply{header.sequenceNr, payload}
+		inbound <- reply{sequenceNr: header.sequenceNr, payload: payload}
 	}
 }
 
@@ -160,54 +160,12 @@ writer:
 	}
 }
 
-func errorToBytes(err string) []byte {
-	var payload bytes.Buffer
-	serializeXmmsValue(&payload, XmmsError(err))
-	return payload.Bytes()
-}
-
-func (c *Client) router(inbound chan reply, outbound chan message, errors chan error) {
-	var registry = make(map[uint32](context))
-
-router:
-	for {
-		select {
-		case msg := <-c.registry:
-			msg.header.sequenceNr = c.nextSequenceNr()
-			registry[msg.header.sequenceNr] = context{
-				msg.result,
-				msg.header.sequenceNr,
-				msg.broadcast,
-			}
-			outbound <- msg
-		case reply := <-inbound:
-			ctx := registry[reply.sequenceNr]
-			go func() {
-				ctx.result <- reply.payload
-			}()
-			if !ctx.broadcast {
-				delete(registry, ctx.sequenceNr)
-			}
-		case err := <-errors:
-			payload := errorToBytes(err.Error())
-			for _, v := range registry {
-				v.result <- payload
-			}
-			break router
-		case <-c.shutdownRegistry:
-			payload := errorToBytes(io.EOF.Error())
-			for _, v := range registry {
-				v.result <- payload
-			}
-			break router
-		}
-	}
+func (c *Client) shutdownRouter(registry map[uint32](context), err error) {
+	// Reference command channel as it will be nullified
+	channel := c.registry
 
 	// Grab the RW-lock, close and nullify the command channel
 	// reference which will allow the draining loop to exit.
-
-	channel := c.registry
-
 	go func() {
 		c.Lock()
 		c.registry = nil
@@ -215,19 +173,61 @@ router:
 		c.Unlock()
 	}()
 
-	payload := errorToBytes("Connection closed")
+	// Terminate all active subscriptions
+	for _, v := range registry {
+		v.result <- reply{err: err}
+	}
+
+	// Drain trailing requests
 	for msg := range channel {
-		msg.result <- payload
+		msg.result <- reply{err: io.EOF}
 	}
 }
 
-func (c *Client) dispatch(objectId uint32, commandId uint32, args XmmsValue) chan []byte {
+func (c *Client) router(inbound chan reply, outbound chan message, errors chan error) {
+	var registry = make(map[uint32](context))
+
+	for {
+		select {
+		case msg := <-c.registry:
+			msg.header.sequenceNr = c.nextSequenceNr()
+			registry[msg.header.sequenceNr] = context{
+				msg.result,
+				msg.broadcast,
+			}
+			outbound <- msg
+		case reply := <-inbound:
+			if reply.err != nil {
+				c.shutdownRouter(registry, reply.err)
+				return
+			}
+
+			ctx := registry[reply.sequenceNr]
+
+			go func() {
+				ctx.result <- reply
+			}()
+
+			if !ctx.broadcast {
+				delete(registry, reply.sequenceNr)
+			}
+		case err := <-errors:
+			c.shutdownRouter(registry, err)
+			return
+		case <-c.shutdownRegistry:
+			c.shutdownRouter(registry, io.EOF)
+			return
+		}
+	}
+}
+
+func (c *Client) dispatch(objectId uint32, commandId uint32, args XmmsValue) chan reply {
 	c.RLock()
 	defer c.RUnlock()
 
-	result := make(chan []byte, 1)
+	result := make(chan reply, 1)
 	if c.registry == nil {
-		result <- errorToBytes("Connection closed")
+		result <- reply{err: io.EOF}
 	} else {
 		c.registry <- message{
 			header: header{
@@ -243,7 +243,7 @@ func (c *Client) dispatch(objectId uint32, commandId uint32, args XmmsValue) cha
 }
 
 func (c *Client) sendHello() (int, error) {
-	result := make(chan []byte)
+	result := make(chan reply)
 
 	c.registry <- message{
 		header: header{
@@ -255,7 +255,12 @@ func (c *Client) sendHello() (int, error) {
 		result:    result,
 	}
 
-	buffer := bytes.NewBuffer(<-result)
+	reply := <-result
+	if reply.err != nil {
+		return -1, reply.err
+	}
+
+	buffer := bytes.NewBuffer(reply.payload)
 
 	value, err := tryDeserialize(buffer)
 	if err != nil {
@@ -292,7 +297,7 @@ func (c *Client) Dial(url string) (int, error) {
 	inbound := make(chan reply)
 	outbound := make(chan message)
 
-	go c.reader(conn, inbound, errors)
+	go c.reader(conn, inbound)
 	go c.writer(conn, outbound, errors)
 	go c.router(inbound, outbound, errors)
 

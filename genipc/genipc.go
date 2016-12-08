@@ -43,7 +43,7 @@ func (c *Client) {{.Name}}(
 		{{- if $index}}, {{end -}}
 		{{- $arg.Name}} {{$arg.Type -}}
 	{{end -}}) ({{.Return.Type}}, error) {
-	__payload := <-c.dispatch({{.ObjectId}}, {{.CommandId}}, XmmsList{
+	__reply := <-c.dispatch({{.ObjectId}}, {{.CommandId}}, XmmsList{
 	{{- range $index, $arg := .Args -}}
 		{{- if $index}}, {{end -}}
 		{{- if len $arg.XmmsType}}
@@ -52,7 +52,10 @@ func (c *Client) {{.Name}}(
 			{{- $arg.Name -}}
 		{{- end -}}
 	{{- end -}}})
-	__buffer := bytes.NewBuffer(__payload)
+	if __reply.err != nil {
+		return {{.Return.Default}}, __reply.err
+	}
+	__buffer := bytes.NewBuffer(__reply.payload)
 	{{ if len .Return.Deserializer -}}
 	return {{.Return.Deserializer}}(__buffer)
 	{{- else -}}
@@ -73,12 +76,15 @@ import (
 )
 
 type Broadcast struct {
-	result chan []byte
+	result chan reply
 }
 
 func (b *Broadcast) Next() (XmmsValue, error) {
-	__payload := <- b.result
-	__buffer := bytes.NewBuffer(__payload)
+	__reply := <- b.result
+	if __reply.err != nil {
+		return nil, __reply.err
+	}
+	__buffer := bytes.NewBuffer(__reply.payload)
 	return tryDeserialize(__buffer)
 }
 
