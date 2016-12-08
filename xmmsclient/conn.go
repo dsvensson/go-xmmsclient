@@ -101,7 +101,7 @@ func (c *Client) nextSequenceNr() uint32 {
 }
 
 func (c *Client) reader(r io.Reader, inbound chan reply) {
-	var buffer = make([]byte, 16)
+	buffer := make([]byte, 16)
 
 	for {
 		_, err := io.ReadFull(r, buffer)
@@ -185,7 +185,7 @@ func (c *Client) shutdownRouter(registry map[uint32](context), err error) {
 }
 
 func (c *Client) router(inbound chan reply, outbound chan message, errors chan error) {
-	var registry = make(map[uint32](context))
+	registry := make(map[uint32](context))
 
 	for {
 		select {

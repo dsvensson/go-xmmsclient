@@ -6,7 +6,7 @@ type EnumValue struct {
 }
 
 func collectEnums(enums []XmlEnum, offset int) map[string][]EnumValue {
-	var result = make(map[string][](EnumValue))
+	result := make(map[string][](EnumValue))
 
 	for _, enum := range enums {
 		index := 0
