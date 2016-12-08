@@ -73,13 +73,21 @@ func collectArguments(arguments []XmlArgument) []Arg {
 		case "binary":
 			arg.Type = "XmmsValue"
 		case "list":
-			arg.Type = "XmmsList" // TODO: Convert to array or vararg
+			if len(entry.Type) > 1 {
+				switch entry.Type[1] {
+				case "string":
+					arg.Type = "[]string"
+					arg.XmmsType = "XmmsStrings"
+				default:
+					panic("Unsupported list-type: " + entry.Type[1])
+				}
+			}
 		case "dictionary":
 			arg.Type = "XmmsDict"
 		case "collection":
 			arg.Type = "XmmsColl"
 		default:
-			panic("Unexpected type")
+			panic("Unexpected type: " + entry.Type[0])
 		}
 		result = append(result, arg)
 	}

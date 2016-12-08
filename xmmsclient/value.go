@@ -9,6 +9,7 @@ type XmmsError string
 type XmmsString string
 type XmmsDict map[string]XmmsValue
 type XmmsList []XmmsValue
+type XmmsStrings []string
 type XmmsRestrictedList struct {
 	Entries  []XmmsValue
 	Restrict uint32
@@ -31,6 +32,8 @@ func (s XmmsString) isXmmsValue() {}
 func (d XmmsDict) isXmmsValue() {}
 
 func (l XmmsList) isXmmsValue() {}
+
+func (l XmmsStrings) isXmmsValue() {}
 
 func (l XmmsRestrictedList) isXmmsValue() {}
 

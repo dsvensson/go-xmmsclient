@@ -80,10 +80,7 @@ func main() {
 	fmt.Println("Connected clients:", clients, "self:", clientId)
 
 	coll := xc.XmmsColl{Type: xc.CollectionTypeUniverse}
-	fetch := xc.XmmsList{xc.XmmsString("artist"), xc.XmmsString("album")}
-	group := xc.XmmsList{xc.XmmsString("album")}
-
-	matches, err := client.CollectionQueryInfos(coll, 0, 0, fetch, group)
+	matches, err := client.CollectionQueryInfos(coll, 0, 0, []string{"artist", "album"}, []string{"album"})
 	if err != nil {
 		fmt.Println("Error(CollectionQueryInfos):", err)
 		return

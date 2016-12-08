@@ -58,6 +58,20 @@ func serializeList(buffer *bytes.Buffer, list XmmsList) error {
 	)
 }
 
+func serializeStringList(buffer *bytes.Buffer, list XmmsStrings) error {
+	return serializeAnyList(buffer, len(list), TypeNone,
+		func(buffer *bytes.Buffer) error {
+			for _, entry := range list {
+				err := serializeXmmsValue(buffer, XmmsString(entry))
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+	)
+}
+
 func serializeDict(buffer *bytes.Buffer, dict XmmsDict) error {
 	err := binary.Write(buffer, binary.BigEndian, uint32(len(dict)))
 	if err != nil {
@@ -149,6 +163,11 @@ func serializeXmmsValue(buffer *bytes.Buffer, value XmmsValue) (err error) {
 		err = binary.Write(buffer, binary.BigEndian, TypeList)
 		if err == nil {
 			return serializeList(buffer, value.(XmmsList))
+		}
+	case XmmsStrings:
+		err = binary.Write(buffer, binary.BigEndian, TypeList)
+		if err == nil {
+			return serializeStringList(buffer, value.(XmmsStrings))
 		}
 	case XmmsColl:
 		err = binary.Write(buffer, binary.BigEndian, TypeColl)
