@@ -6,17 +6,6 @@ import (
 )
 
 
-// Says hello to the daemon.
-func (c *Client) MainHello(protocolVersion int, client string) (XmmsInt, error) {
-	__payload := <-c.dispatch(1, 32, XmmsList{XmmsInt(protocolVersion), XmmsString(client)})
-	__buffer := bytes.NewBuffer(__payload)
-	__value, __err := tryDeserialize(__buffer)
-	if __err != nil {
-		return 0, __err
-	}
-	return __value.(XmmsInt), nil
-}
-
 // Shuts down the daemon.
 func (c *Client) MainQuit() (XmmsValue, error) {
 	__payload := <-c.dispatch(1, 33, XmmsList{})
@@ -569,83 +558,6 @@ func (c *Client) CollectionIdlistFromPlaylist(url string) (XmmsValue, error) {
 	return __value.(XmmsValue), nil
 }
 
-// Retrieves the visualization version.
-func (c *Client) VisualizationQueryVersion() (XmmsInt, error) {
-	__payload := <-c.dispatch(7, 32, XmmsList{})
-	__buffer := bytes.NewBuffer(__payload)
-	__value, __err := tryDeserialize(__buffer)
-	if __err != nil {
-		return 0, __err
-	}
-	return __value.(XmmsInt), nil
-}
-
-// Registers a visualization client.
-func (c *Client) VisualizationRegister() (XmmsInt, error) {
-	__payload := <-c.dispatch(7, 33, XmmsList{})
-	__buffer := bytes.NewBuffer(__payload)
-	__value, __err := tryDeserialize(__buffer)
-	if __err != nil {
-		return 0, __err
-	}
-	return __value.(XmmsInt), nil
-}
-
-// FIXME.
-func (c *Client) VisualizationInitShm(id int, shmId string) (XmmsInt, error) {
-	__payload := <-c.dispatch(7, 34, XmmsList{XmmsInt(id), XmmsString(shmId)})
-	__buffer := bytes.NewBuffer(__payload)
-	__value, __err := tryDeserialize(__buffer)
-	if __err != nil {
-		return 0, __err
-	}
-	return __value.(XmmsInt), nil
-}
-
-// FIXME.
-func (c *Client) VisualizationInitUdp(id int) (XmmsInt, error) {
-	__payload := <-c.dispatch(7, 35, XmmsList{XmmsInt(id)})
-	__buffer := bytes.NewBuffer(__payload)
-	__value, __err := tryDeserialize(__buffer)
-	if __err != nil {
-		return 0, __err
-	}
-	return __value.(XmmsInt), nil
-}
-
-// Delivers one property.
-func (c *Client) VisualizationSetProperty(id int, key string, value string) (XmmsInt, error) {
-	__payload := <-c.dispatch(7, 36, XmmsList{XmmsInt(id), XmmsString(key), XmmsString(value)})
-	__buffer := bytes.NewBuffer(__payload)
-	__value, __err := tryDeserialize(__buffer)
-	if __err != nil {
-		return 0, __err
-	}
-	return __value.(XmmsInt), nil
-}
-
-// Delivers one or more properties.
-func (c *Client) VisualizationSetProperties(id int, properties XmmsDict) (XmmsInt, error) {
-	__payload := <-c.dispatch(7, 37, XmmsList{XmmsInt(id), properties})
-	__buffer := bytes.NewBuffer(__payload)
-	__value, __err := tryDeserialize(__buffer)
-	if __err != nil {
-		return 0, __err
-	}
-	return __value.(XmmsInt), nil
-}
-
-// Shuts down the visualization client.
-func (c *Client) VisualizationShutdown(id int) (XmmsValue, error) {
-	__payload := <-c.dispatch(7, 38, XmmsList{XmmsInt(id)})
-	__buffer := bytes.NewBuffer(__payload)
-	__value, __err := tryDeserialize(__buffer)
-	if __err != nil {
-		return nil, __err
-	}
-	return __value.(XmmsValue), nil
-}
-
 // Retrieves a list of paths available (directly) under the given path.
 func (c *Client) XformBrowse(url string) ([]XmmsDict, error) {
 	__payload := <-c.dispatch(9, 32, XmmsList{XmmsString(url)})
@@ -691,17 +603,6 @@ func (c *Client) BindataList() ([]string, error) {
 	__payload := <-c.dispatch(10, 35, XmmsList{})
 	__buffer := bytes.NewBuffer(__payload)
 	return tryDeserializeStringList(__buffer)
-}
-
-// Save collections to disk.
-func (c *Client) CollSyncSync() (XmmsValue, error) {
-	__payload := <-c.dispatch(11, 32, XmmsList{})
-	__buffer := bytes.NewBuffer(__payload)
-	__value, __err := tryDeserialize(__buffer)
-	if __err != nil {
-		return nil, __err
-	}
-	return __value.(XmmsValue), nil
 }
 
 // Assemble and send a client-to-client message.
