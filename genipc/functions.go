@@ -39,6 +39,19 @@ const (
 	DefaultDict   = "XmmsDict{}"
 )
 
+func skip(object string, method string) bool {
+	if object == "visualization" {
+		return true
+	}
+	if object == "coll_sync" {
+		return true
+	}
+	if object == "main" && method == "hello" {
+		return true
+	}
+	return false
+}
+
 func collectArguments(arguments []XmlArgument) []Arg {
 	var result []Arg
 
@@ -112,6 +125,9 @@ func collectFunctions(objects []XmlObject, offset int) []Function {
 	var functions []Function
 	for objectId, obj := range objects {
 		for commandId, method := range obj.Methods {
+			if skip(obj.Name, method.Name) {
+				continue
+			}
 			functions = append(functions, Function{
 				ObjectId:  objectId + 1,
 				CommandId: commandId + offset,
@@ -133,6 +149,9 @@ func collectBroadcasts(objects []XmlObject, offset int) []Broadcast {
 	signalId := 0
 	for _, obj := range objects {
 		for _, broadcast := range obj.Broadcasts {
+			if skip(obj.Name, broadcast.Name) {
+				continue
+			}
 			broadcasts = append(broadcasts, Broadcast{
 				ObjectId: offset,
 				SignalId: signalId,
