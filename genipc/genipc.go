@@ -18,8 +18,9 @@ func toCamelCase(name string, initialUpper bool) string {
 	return strings.ToLower(parts[0]) + strings.Join(parts[1:], "")
 }
 
-var enumTemplate = `// auto-generated
-package xmmsclient
+var enumTemplate = `package xmmsclient
+
+// auto-generated
 
 const (
 {{- range $key, $values := .}}
@@ -29,8 +30,9 @@ const (
 {{- end}}
 )`
 
-var methodTemplate = `// auto-generated
-package xmmsclient
+var methodTemplate = `package xmmsclient
+
+// auto-generated
 
 import (
 	"bytes"
@@ -68,8 +70,9 @@ func (c *Client) {{.Name}}(
 }
 {{end}}`
 
-var broadcastTemplate = `// auto-generated
-package xmmsclient
+var broadcastTemplate = `package xmmsclient
+
+// auto-generated
 
 import (
 	"bytes"
