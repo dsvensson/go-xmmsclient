@@ -1,17 +1,21 @@
-// auto-generated
 package xmmsclient
+
+// auto-generated
 
 import (
 	"bytes"
 )
 
 type Broadcast struct {
-	result chan []byte
+	result chan reply
 }
 
 func (b *Broadcast) Next() (XmmsValue, error) {
-	__payload := <- b.result
-	__buffer := bytes.NewBuffer(__payload)
+	__reply := <- b.result
+	if __reply.err != nil {
+		return nil, __reply.err
+	}
+	__buffer := bytes.NewBuffer(__reply.payload)
 	return tryDeserialize(__buffer)
 }
 

@@ -1,5 +1,6 @@
-// auto-generated
 package xmmsclient
+
+// auto-generated
 
 const (
 
