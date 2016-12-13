@@ -23,14 +23,6 @@ type Function struct {
 	Return         Return
 }
 
-type Broadcast struct {
-	ObjectId int
-	SignalId int
-	Name     string
-	Doc      string
-	Return   Return
-}
-
 const (
 	DefaultInt    = "0"
 	DefaultString = "\"\""
@@ -151,25 +143,28 @@ func collectFunctions(objects []XmlObject, offset int) []Function {
 	return functions
 }
 
-func collectBroadcasts(objects []XmlObject, offset int) []Broadcast {
-	var broadcasts []Broadcast
+func collectRepeatables(objects []XmlObject, offset int, class int, prefix string) []Function {
+	var broadcasts []Function
 
 	signalId := 0
 	for _, obj := range objects {
-		for _, broadcast := range obj.Broadcasts {
-			if skip(obj.Name, broadcast.Name) {
-				continue
+		for _, method := range obj.Broadcasts {
+			if !skip(obj.Name, method.Name) && method.ResultClass == class {
+				broadcasts = append(broadcasts, Function{
+					ObjectId:  offset,
+					CommandId: signalId,
+					Name:      prefix + toCamelCase(obj.Name+"_"+method.Name, true),
+					Doc:       method.Doc,
+					Return:    collectResultConsumer(method.ReturnValue),
+				})
 			}
-			broadcasts = append(broadcasts, Broadcast{
-				ObjectId: offset,
-				SignalId: signalId,
-				Name:     toCamelCase(obj.Name+"_"+broadcast.Name, true),
-				Doc:      broadcast.Doc,
-				Return:   collectResultConsumer(broadcast.ReturnValue),
-			})
 			signalId += 1
 		}
 	}
 
 	return broadcasts
+}
+
+func collectBroadcasts(objects []XmlObject, offset int) []Function {
+	return collectRepeatables(objects, offset+1, ResultClassBroadcast, "Broadcast")
 }

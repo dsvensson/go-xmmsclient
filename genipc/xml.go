@@ -6,6 +6,12 @@ import (
 	"os"
 )
 
+const (
+	ResultClassDefault = iota
+	ResultClassBroadcast
+	ResultClassSignal
+)
+
 type XmlValueType []string
 
 type XmlReturnValue struct {
@@ -24,16 +30,17 @@ type XmlArgument struct {
 }
 
 type XmlMethod struct {
-	Name        string         `xml:"name"`
-	Doc         string         `xml:"documentation"`
-	Arguments   []XmlArgument  `xml:"argument"`
+	Name        string        `xml:"name"`
+	Doc         string        `xml:"documentation"`
+	Arguments   []XmlArgument `xml:"argument"`
+	ResultClass int
 	ReturnValue XmlReturnValue `xml:"return_value"`
 }
 
 type XmlObject struct {
-	Name       string      `xml:"name"`
-	Methods    []XmlMethod `xml:"method"`
-	Broadcasts []XmlMethod `xml:"broadcast"`
+	Name       string
+	Methods    []XmlMethod
+	Broadcasts []XmlMethod
 }
 
 type XmlEnum struct {
@@ -75,6 +82,42 @@ func (c *XmlValueType) UnmarshalXML(d *xml.Decoder, start xml.StartElement) erro
 	}
 
 	*c = signature
+
+	return nil
+}
+
+func (obj *XmlObject) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	result := XmlObject{}
+
+	done := false
+	for !done {
+		token, err := d.Token()
+		if err != nil {
+			return err
+		}
+
+		switch elem := token.(type) {
+		case xml.StartElement:
+			if elem.Name.Local == "name" {
+				d.DecodeElement(&result.Name, &elem)
+			}
+			if elem.Name.Local == "method" {
+				method := XmlMethod{ResultClass: ResultClassDefault}
+				d.DecodeElement(&method, &elem)
+				result.Methods = append(result.Methods, method)
+			} else if elem.Name.Local == "broadcast" {
+				method := XmlMethod{ResultClass: ResultClassBroadcast}
+				d.DecodeElement(&method, &elem)
+				result.Broadcasts = append(result.Broadcasts, method)
+			}
+		case xml.EndElement:
+			if elem.Name.Local == "object" {
+				done = true
+			}
+		}
+	}
+
+	*obj = result
 
 	return nil
 }

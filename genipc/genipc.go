@@ -93,8 +93,8 @@ func (b *Broadcast) Next() (XmmsValue, error) {
 
 {{range .}}
 // {{.Doc}}
-func (c *Client) Broadcast{{.Name}}() Broadcast {
-	__chan := c.dispatch(0, 33, XmmsList{XmmsInt({{- .SignalId -}})})
+func (c *Client) {{.Name}}() Broadcast {
+	__chan := c.dispatch(0, {{.ObjectId}}, XmmsList{XmmsInt({{- .CommandId -}})})
 	return Broadcast{__chan}
 }
 {{end}}`
