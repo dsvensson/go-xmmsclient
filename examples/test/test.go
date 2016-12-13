@@ -7,6 +7,18 @@ import (
 	"time"
 )
 
+func signal(client *xc.Client) {
+	fmt.Println("Requesting playtime:")
+	for {
+		value, err := client.SignalPlaybackPlaytime()
+		if err != nil {
+			fmt.Println("Error(SignalPlaybackPlaytime):", err)
+			return
+		}
+		fmt.Printf("Playtime: %d\n", value)
+	}
+}
+
 func playlistChanges(client *xc.Client) {
 	bcast := client.BroadcastPlaylistChanged()
 	for {
@@ -57,6 +69,7 @@ func main() {
 
 	go repeat(client)
 	go playlistChanges(client)
+	go signal(client)
 
 	time.Sleep(time.Millisecond * 5)
 
