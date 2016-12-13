@@ -70,54 +70,54 @@ func (c *Client) BroadcastPlaybackCurrentId() Broadcast {
 
 // This broadcast is triggered when an entry is added to the medialib.
 func (c *Client) BroadcastMedialibEntryAdded() Broadcast {
-	__chan := c.dispatch(0, 33, XmmsList{XmmsInt(8)})
+	__chan := c.dispatch(0, 33, XmmsList{XmmsInt(9)})
 	return Broadcast{__chan}
 }
 
 // This broadcast is triggered when the properties of a medialib entry are changed.
 func (c *Client) BroadcastMedialibEntryChanged() Broadcast {
-	__chan := c.dispatch(0, 33, XmmsList{XmmsInt(9)})
+	__chan := c.dispatch(0, 33, XmmsList{XmmsInt(10)})
 	return Broadcast{__chan}
 }
 
 // This broadcast is triggered when a medialib entry is removed.
 func (c *Client) BroadcastMedialibEntryRemoved() Broadcast {
-	__chan := c.dispatch(0, 33, XmmsList{XmmsInt(10)})
+	__chan := c.dispatch(0, 33, XmmsList{XmmsInt(11)})
 	return Broadcast{__chan}
 }
 
 // This broadcast is triggered when a collection is changed.
 func (c *Client) BroadcastCollectionChanged() Broadcast {
-	__chan := c.dispatch(0, 33, XmmsList{XmmsInt(11)})
+	__chan := c.dispatch(0, 33, XmmsList{XmmsInt(12)})
 	return Broadcast{__chan}
 }
 
 // This broadcast is triggered when the status of the mediainfo reader changes.
 func (c *Client) BroadcastMediainfoReaderStatus() Broadcast {
-	__chan := c.dispatch(0, 33, XmmsList{XmmsInt(12)})
+	__chan := c.dispatch(0, 33, XmmsList{XmmsInt(13)})
 	return Broadcast{__chan}
 }
 
 // This broadcast carries client-to-client messages.
 func (c *Client) BroadcastCourierMessage() Broadcast {
-	__chan := c.dispatch(0, 33, XmmsList{XmmsInt(13)})
+	__chan := c.dispatch(0, 33, XmmsList{XmmsInt(15)})
 	return Broadcast{__chan}
 }
 
 // This broadcast is emitted when a client's services are ready.
 func (c *Client) BroadcastCourierReady() Broadcast {
-	__chan := c.dispatch(0, 33, XmmsList{XmmsInt(14)})
+	__chan := c.dispatch(0, 33, XmmsList{XmmsInt(16)})
 	return Broadcast{__chan}
 }
 
 // This broadcast is emitted when a new client connects.
 func (c *Client) BroadcastIpcManagerClientConnected() Broadcast {
-	__chan := c.dispatch(0, 33, XmmsList{XmmsInt(15)})
+	__chan := c.dispatch(0, 33, XmmsList{XmmsInt(17)})
 	return Broadcast{__chan}
 }
 
 // This broadcast is emitted when a client disconnects.
 func (c *Client) BroadcastIpcManagerClientDisconnected() Broadcast {
-	__chan := c.dispatch(0, 33, XmmsList{XmmsInt(16)})
+	__chan := c.dispatch(0, 33, XmmsList{XmmsInt(18)})
 	return Broadcast{__chan}
 }
