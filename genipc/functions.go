@@ -8,6 +8,7 @@ type Arg struct {
 }
 
 type Return struct {
+	Name         string
 	Type         string
 	Default      string
 	Deserializer string
@@ -90,34 +91,37 @@ func collectArguments(arguments []XmlArgument) []Arg {
 func collectResultConsumer(signature XmlReturnValue) Return {
 	if len(signature.Type) == 0 {
 		// TODO: Deal with void functions.
-		return Return{Type: "XmmsValue", Default: DefaultPtr}
+		return Return{Name: "Void", Type: "XmmsValue", Default: DefaultPtr}
 	}
 	switch signature.Type[0] {
 	case "enum-value":
-		return Return{Type: "XmmsInt", Default: DefaultInt}
+		return Return{Name: "Int", Type: "XmmsInt", Default: DefaultInt}
 	case "int":
-		return Return{Type: "XmmsInt", Default: DefaultInt}
+		return Return{Name: "Int", Type: "XmmsInt", Default: DefaultInt}
 	case "string":
-		return Return{Type: "XmmsString", Default: DefaultString}
+		return Return{Name: "String", Type: "XmmsString", Default: DefaultString}
 	case "list":
 		if len(signature.Type) > 1 {
 			switch signature.Type[1] {
 			case "int":
 				return Return{
-					Type: "[]int", Default: DefaultPtr, Deserializer: "tryDeserializeIntList"}
+					Name: "IntList", Type: "[]int", Default: DefaultPtr, Deserializer: "tryDeserializeIntList",
+				}
 			case "string":
 				return Return{
-					Type: "[]string", Default: DefaultPtr, Deserializer: "tryDeserializeStringList"}
+					Name: "StringList", Type: "[]string", Default: DefaultPtr, Deserializer: "tryDeserializeStringList",
+				}
 			case "dictionary":
 				return Return{
-					Type: "[]XmmsDict", Default: DefaultPtr, Deserializer: "tryDeserializeDictList"}
+					Name: "DictList", Type: "[]XmmsDict", Default: DefaultPtr, Deserializer: "tryDeserializeDictList",
+				}
 			}
 		}
-		return Return{Type: "XmmsList", Default: DefaultList}
+		return Return{Name: "List", Type: "XmmsList", Default: DefaultList}
 	case "dictionary":
-		return Return{Type: "XmmsDict", Default: DefaultDict}
+		return Return{Name: "Dict", Type: "XmmsDict", Default: DefaultDict}
 	default:
-		return Return{Type: "XmmsValue", Default: DefaultPtr}
+		return Return{Name: "Value", Type: "XmmsValue", Default: DefaultPtr}
 	}
 }
 
