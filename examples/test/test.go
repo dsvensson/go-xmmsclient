@@ -58,6 +58,17 @@ func repeat(client *xc.Client) {
 	}
 }
 
+func prettyPlayback(status xc.XmmsInt) {
+	switch status {
+	case xc.PlaybackStatusPlay:
+		fmt.Println("Status: PLAYING")
+	case xc.PlaybackStatusStop:
+		fmt.Println("Status: STOPPED")
+	case xc.PlaybackStatusPause:
+		fmt.Println("Status: PAUSED")
+	}
+}
+
 func main() {
 	client := xc.NewClient("hello-from-go")
 
@@ -70,6 +81,25 @@ func main() {
 	go repeat(client)
 	go playlistChanges(client)
 	go signal(client)
+
+	go func() {
+		value, err := client.PlaybackStatus()
+		if err != nil {
+			fmt.Println("Error(PlaybackStatus):", err)
+			return
+		}
+		prettyPlayback(value)
+
+		bcast := client.BroadcastPlaybackStatus()
+		for {
+			value, err := bcast.Next()
+			if err != nil {
+				fmt.Println("Error(BroadcastPlaybackStatus):", err)
+				return
+			}
+			prettyPlayback(value)
+		}
+	}()
 
 	time.Sleep(time.Millisecond * 5)
 
