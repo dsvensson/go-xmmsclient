@@ -106,24 +106,62 @@ import (
 	"bytes"
 )
 
-type Broadcast struct {
+type IntBroadcast struct {
 	result chan reply
 }
 
-func (b *Broadcast) Next() (XmmsValue, error) {
+type StringBroadcast struct {
+	result chan reply
+}
+
+type DictBroadcast struct {
+	result chan reply
+}
+
+func (b *IntBroadcast) Next() (XmmsInt, error) {
 	__reply := <- b.result
 	if __reply.err != nil {
-		return nil, __reply.err
+		return -1, __reply.err
 	}
 	__buffer := bytes.NewBuffer(__reply.payload)
-	return tryDeserialize(__buffer)
+	__value, __err := tryDeserialize(__buffer)
+	if __err != nil {
+		return -1, __err
+	}
+	return __value.(XmmsInt), nil
+}
+
+func (b *StringBroadcast) Next() (XmmsString, error) {
+	__reply := <- b.result
+	if __reply.err != nil {
+		return "", __reply.err
+	}
+	__buffer := bytes.NewBuffer(__reply.payload)
+	__value, __err := tryDeserialize(__buffer)
+	if __err != nil {
+		return "", __err
+	}
+	return __value.(XmmsString), nil
+}
+
+func (b *DictBroadcast) Next() (XmmsDict, error) {
+	__reply := <- b.result
+	if __reply.err != nil {
+		return XmmsDict{}, __reply.err
+	}
+	__buffer := bytes.NewBuffer(__reply.payload)
+	__value, __err := tryDeserialize(__buffer)
+	if __err != nil {
+		return XmmsDict{}, __err
+	}
+	return __value.(XmmsDict), nil
 }
 
 {{range .}}
 // {{.Doc}}
-func (c *Client) {{.Name}}() Broadcast {
+func (c *Client) {{.Name}}() {{.Return.Name}}Broadcast {
 	__chan := c.dispatch(0, {{.ObjectId}}, XmmsList{XmmsInt({{- .CommandId -}})})
-	return Broadcast{__chan}
+	return {{.Return.Name}}Broadcast{__chan}
 }
 {{end}}`
 
