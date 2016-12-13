@@ -165,6 +165,10 @@ func collectRepeatables(objects []XmlObject, offset int, class int, prefix strin
 	return broadcasts
 }
 
+func collectSignals(objects []XmlObject, offset int) []Function {
+	return collectRepeatables(objects, offset, ResultClassSignal, "Signal")
+}
+
 func collectBroadcasts(objects []XmlObject, offset int) []Function {
 	return collectRepeatables(objects, offset+1, ResultClassBroadcast, "Broadcast")
 }

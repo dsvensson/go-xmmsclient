@@ -109,6 +109,10 @@ func (obj *XmlObject) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error
 				method := XmlMethod{ResultClass: ResultClassBroadcast}
 				d.DecodeElement(&method, &elem)
 				result.Broadcasts = append(result.Broadcasts, method)
+			} else if elem.Name.Local == "signal" {
+				method := XmlMethod{ResultClass: ResultClassSignal}
+				d.DecodeElement(&method, &elem)
+				result.Broadcasts = append(result.Broadcasts, method)
 			}
 		case xml.EndElement:
 			if elem.Name.Local == "object" {

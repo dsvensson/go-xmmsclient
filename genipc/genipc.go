@@ -70,6 +70,34 @@ func (c *Client) {{.Name}}(
 }
 {{end}}`
 
+var signalTemplate = `package xmmsclient
+
+// auto-generated
+
+import (
+	"bytes"
+)
+
+{{range .}}
+// {{.Doc}}
+func (c *Client) {{.Name}}() ({{.Return.Type}}, error) {
+	__reply := <-c.dispatch(0, {{.ObjectId}}, XmmsList{XmmsInt({{- .CommandId -}})})
+	if __reply.err != nil {
+		return {{.Return.Default}}, __reply.err
+	}
+	__buffer := bytes.NewBuffer(__reply.payload)
+	{{ if len .Return.Deserializer -}}
+	return {{.Return.Deserializer}}(__buffer)
+	{{- else -}}
+	__value, __err := tryDeserialize(__buffer)
+	if __err != nil {
+		return {{.Return.Default}}, __err
+	}
+	return __value.({{.Return.Type}}), nil
+	{{- end}}
+}
+{{end}}`
+
 var broadcastTemplate = `package xmmsclient
 
 // auto-generated
@@ -105,6 +133,8 @@ func collect(api *Query, template string) interface{} {
 		return collectEnums(api.Enums, api.Offset)
 	case "methods":
 		return collectFunctions(api.Objects, api.Offset)
+	case "signals":
+		return collectSignals(api.Objects, api.Offset)
 	case "broadcasts":
 		return collectBroadcasts(api.Objects, api.Offset)
 	default:
@@ -134,6 +164,7 @@ func main() {
 	tpl := template.New("").Funcs(funcMap)
 	tpl = template.Must(tpl.New("enums").Parse(enumTemplate))
 	tpl = template.Must(tpl.New("methods").Parse(methodTemplate))
+	tpl = template.Must(tpl.New("signals").Parse(signalTemplate))
 	tpl = template.Must(tpl.New("broadcasts").Parse(broadcastTemplate))
 
 	data := collect(api, target)
