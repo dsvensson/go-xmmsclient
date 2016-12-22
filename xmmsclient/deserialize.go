@@ -1,31 +1,31 @@
 package xmmsclient
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"math"
 )
 
 type listConsumer func(value XmmsValue)
 
-func deserializeInt(buffer *bytes.Buffer) (value XmmsInt, err error) {
-	err = binary.Read(buffer, binary.BigEndian, &value)
+func deserializeInt(r io.Reader) (value XmmsInt, err error) {
+	err = binary.Read(r, binary.BigEndian, &value)
 	return
 }
 
-func deserializeFloat(buffer *bytes.Buffer) (value XmmsFloat, err error) {
+func deserializeFloat(r io.Reader) (value XmmsFloat, err error) {
 	var mantissaInt int32
 	var exponent int32
 	var mantissa float64
 
-	err = binary.Read(buffer, binary.BigEndian, &mantissaInt)
+	err = binary.Read(r, binary.BigEndian, &mantissaInt)
 	if err != nil {
 		return
 	}
 
-	err = binary.Read(buffer, binary.BigEndian, &exponent)
+	err = binary.Read(r, binary.BigEndian, &exponent)
 	if err != nil {
 		return
 	}
@@ -41,14 +41,14 @@ func deserializeFloat(buffer *bytes.Buffer) (value XmmsFloat, err error) {
 	return
 }
 
-func deserializeRawString(buffer *bytes.Buffer) (value string, err error) {
+func deserializeRawString(r io.Reader) (value string, err error) {
 	var length uint32
-	err = binary.Read(buffer, binary.BigEndian, &length)
+	err = binary.Read(r, binary.BigEndian, &length)
 	if err != nil {
 		return
 	}
 	data := make([]byte, length)
-	err = binary.Read(buffer, binary.BigEndian, &data)
+	err = binary.Read(r, binary.BigEndian, &data)
 	if err != nil {
 		return
 	}
@@ -57,36 +57,36 @@ func deserializeRawString(buffer *bytes.Buffer) (value string, err error) {
 	return
 }
 
-func deserializeString(buffer *bytes.Buffer) (value XmmsString, err error) {
-	data, err := deserializeRawString(buffer)
+func deserializeString(r io.Reader) (value XmmsString, err error) {
+	data, err := deserializeRawString(r)
 	if err == nil {
 		value = XmmsString(data)
 	}
 	return
 }
 
-func deserializeError(buffer *bytes.Buffer) (value XmmsError, err error) {
-	data, err := deserializeRawString(buffer)
+func deserializeError(r io.Reader) (value XmmsError, err error) {
+	data, err := deserializeRawString(r)
 	if err == nil {
 		value = XmmsError(data)
 	}
 	return
 }
 
-func deserializeAnyList(buffer *bytes.Buffer, consumer listConsumer) error {
+func deserializeAnyList(r io.Reader, consumer listConsumer) error {
 	var restrict uint32
-	err := binary.Read(buffer, binary.BigEndian, &restrict) // TODO: respect restrict
+	err := binary.Read(r, binary.BigEndian, &restrict) // TODO: respect restrict
 	if err != nil {
 		return err
 	}
 	var length uint32
-	err = binary.Read(buffer, binary.BigEndian, &length)
+	err = binary.Read(r, binary.BigEndian, &length)
 	if err != nil {
 		return err
 	}
 	if restrict != TypeNone {
 		for i := uint32(0); i < length; i++ {
-			entry, err := deserializeXmmsValueOfType(restrict, buffer)
+			entry, err := deserializeXmmsValueOfType(restrict, r)
 			if err != nil {
 				return err
 			}
@@ -94,7 +94,7 @@ func deserializeAnyList(buffer *bytes.Buffer, consumer listConsumer) error {
 		}
 	} else {
 		for i := uint32(0); i < length; i++ {
-			entry, err := deserializeXmmsValue(buffer)
+			entry, err := deserializeXmmsValue(r)
 			if err != nil {
 				return err
 			}
@@ -104,18 +104,18 @@ func deserializeAnyList(buffer *bytes.Buffer, consumer listConsumer) error {
 	return nil
 }
 
-func deserializeList(buffer *bytes.Buffer) (value XmmsList, err error) {
+func deserializeList(r io.Reader) (value XmmsList, err error) {
 	list := XmmsList{}
-	err = deserializeAnyList(buffer, func(value XmmsValue) {
+	err = deserializeAnyList(r, func(value XmmsValue) {
 		list = append(list, value)
 	})
 	value = list
 	return
 }
 
-func deserializeDict(buffer *bytes.Buffer) (value XmmsDict, err error) {
+func deserializeDict(r io.Reader) (value XmmsDict, err error) {
 	var length uint32
-	err = binary.Read(buffer, binary.BigEndian, &length)
+	err = binary.Read(r, binary.BigEndian, &length)
 	if err != nil {
 		return
 	}
@@ -124,12 +124,12 @@ func deserializeDict(buffer *bytes.Buffer) (value XmmsDict, err error) {
 		var entry XmmsValue
 		var key string
 
-		key, err = deserializeRawString(buffer)
+		key, err = deserializeRawString(r)
 		if err != nil {
 			return
 		}
 
-		entry, err = deserializeXmmsValue(buffer)
+		entry, err = deserializeXmmsValue(r)
 		if err != nil {
 			return
 		}
@@ -140,18 +140,18 @@ func deserializeDict(buffer *bytes.Buffer) (value XmmsDict, err error) {
 	return
 }
 
-func deserializeColl(buffer *bytes.Buffer) (result XmmsColl, err error) {
-	err = binary.Read(buffer, binary.BigEndian, &result.Type)
+func deserializeColl(r io.Reader) (result XmmsColl, err error) {
+	err = binary.Read(r, binary.BigEndian, &result.Type)
 	if err != nil {
 		return
 	}
 
-	result.Attributes, err = deserializeDict(buffer)
+	result.Attributes, err = deserializeDict(r)
 	if err != nil {
 		return
 	}
 
-	err = deserializeAnyList(buffer, func(raw XmmsValue) {
+	err = deserializeAnyList(r, func(raw XmmsValue) {
 		if value, ok := raw.(XmmsInt); ok {
 			result.IdList = append(result.IdList, int(value))
 		}
@@ -160,7 +160,7 @@ func deserializeColl(buffer *bytes.Buffer) (result XmmsColl, err error) {
 		return
 	}
 
-	err = deserializeAnyList(buffer, func(raw XmmsValue) {
+	err = deserializeAnyList(r, func(raw XmmsValue) {
 		if value, ok := raw.(XmmsColl); ok {
 			result.Operands = append(result.Operands, value)
 		}
@@ -169,37 +169,37 @@ func deserializeColl(buffer *bytes.Buffer) (result XmmsColl, err error) {
 	return
 }
 
-func deserializeXmmsValueOfType(valueType uint32, buffer *bytes.Buffer) (result XmmsValue, err error) {
+func deserializeXmmsValueOfType(valueType uint32, r io.Reader) (result XmmsValue, err error) {
 	switch valueType {
 	case TypeInt64:
-		result, err = deserializeInt(buffer)
+		result, err = deserializeInt(r)
 	case TypeFloat:
-		result, err = deserializeFloat(buffer)
+		result, err = deserializeFloat(r)
 	case TypeError:
-		result, err = deserializeError(buffer)
+		result, err = deserializeError(r)
 	case TypeString:
-		result, err = deserializeString(buffer)
+		result, err = deserializeString(r)
 	case TypeList:
-		result, err = deserializeList(buffer)
+		result, err = deserializeList(r)
 	case TypeDict:
-		result, err = deserializeDict(buffer)
+		result, err = deserializeDict(r)
 	case TypeColl:
-		result, err = deserializeColl(buffer)
+		result, err = deserializeColl(r)
 	}
 	return
 }
 
-func deserializeXmmsValue(buffer *bytes.Buffer) (XmmsValue, error) {
+func deserializeXmmsValue(r io.Reader) (XmmsValue, error) {
 	var valueType uint32
-	err := binary.Read(buffer, binary.BigEndian, &valueType)
+	err := binary.Read(r, binary.BigEndian, &valueType)
 	if err != nil {
 		return nil, err
 	}
-	return deserializeXmmsValueOfType(valueType, buffer)
+	return deserializeXmmsValueOfType(valueType, r)
 }
 
-func tryDeserialize(buffer *bytes.Buffer) (XmmsValue, error) {
-	value, err := deserializeXmmsValue(buffer)
+func tryDeserialize(r io.Reader) (XmmsValue, error) {
+	value, err := deserializeXmmsValue(r)
 	if err != nil {
 		return nil, err
 	}
@@ -212,31 +212,31 @@ func tryDeserialize(buffer *bytes.Buffer) (XmmsValue, error) {
 	return value, nil
 }
 
-func tryDeserializeList(buffer *bytes.Buffer, consumer listConsumer) error {
+func tryDeserializeList(r io.Reader, consumer listConsumer) error {
 	var valueType uint32
 
-	err := binary.Read(buffer, binary.BigEndian, &valueType)
+	err := binary.Read(r, binary.BigEndian, &valueType)
 	if err != nil {
 		return err
 	}
 
 	switch valueType {
 	case TypeError:
-		value, err := deserializeError(buffer)
+		value, err := deserializeError(r)
 		if err != nil {
 			return err
 		}
 		return errors.New(string(value))
 	case TypeList:
-		return deserializeAnyList(buffer, consumer)
+		return deserializeAnyList(r, consumer)
 	default:
 		return errors.New(fmt.Sprintf("Trying to parse non-list as list (%v)", valueType))
 	}
 }
 
-func tryDeserializeIntList(buffer *bytes.Buffer) ([]int, error) {
+func tryDeserializeIntList(r io.Reader) ([]int, error) {
 	var list []int
-	err := tryDeserializeList(buffer, func(raw XmmsValue) {
+	err := tryDeserializeList(r, func(raw XmmsValue) {
 		if value, ok := raw.(XmmsInt); ok {
 			list = append(list, int(value))
 		}
@@ -247,9 +247,9 @@ func tryDeserializeIntList(buffer *bytes.Buffer) ([]int, error) {
 	return list, nil
 }
 
-func tryDeserializeStringList(buffer *bytes.Buffer) ([]string, error) {
+func tryDeserializeStringList(r io.Reader) ([]string, error) {
 	var list []string
-	err := tryDeserializeList(buffer, func(raw XmmsValue) {
+	err := tryDeserializeList(r, func(raw XmmsValue) {
 		if value, ok := raw.(XmmsString); ok {
 			list = append(list, string(value))
 		}
@@ -260,9 +260,9 @@ func tryDeserializeStringList(buffer *bytes.Buffer) ([]string, error) {
 	return list, nil
 }
 
-func tryDeserializeDictList(buffer *bytes.Buffer) ([]XmmsDict, error) {
+func tryDeserializeDictList(r io.Reader) ([]XmmsDict, error) {
 	var list []XmmsDict
-	err := tryDeserializeList(buffer, func(raw XmmsValue) {
+	err := tryDeserializeList(r, func(raw XmmsValue) {
 		if value, ok := raw.(XmmsDict); ok {
 			list = append(list, value)
 		}
