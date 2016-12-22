@@ -2,7 +2,6 @@ package xmmsclient
 
 import (
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -206,7 +205,7 @@ func tryDeserialize(r io.Reader) (XmmsValue, error) {
 
 	errorMessage, ok := value.(XmmsError)
 	if ok {
-		return nil, errors.New(string(errorMessage))
+		return nil, fmt.Errorf("%s", errorMessage)
 	}
 
 	return value, nil
@@ -226,11 +225,11 @@ func tryDeserializeList(r io.Reader, consumer listConsumer) error {
 		if err != nil {
 			return err
 		}
-		return errors.New(string(value))
+		return fmt.Errorf("%s", value)
 	case TypeList:
 		return deserializeAnyList(r, consumer)
 	default:
-		return errors.New(fmt.Sprintf("Trying to parse non-list as list (%v)", valueType))
+		return fmt.Errorf("Trying to parse non-list as list (%v)", valueType)
 	}
 }
 
