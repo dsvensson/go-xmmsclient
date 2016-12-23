@@ -5,6 +5,9 @@ go:
 
 before_install:
   - go get github.com/mattn/goveralls
+  - go get github.com/alecthomas/gometalinter
+  - gometalinter --install
 
 script:
+  - gometalinter --disable golint --disable gocyclo xmmsclient
   - $HOME/gopath/bin/goveralls -service=travis-ci -ignore=xmmsclient/auto*.go,genipc/*,examples/*/*
