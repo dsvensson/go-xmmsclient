@@ -21,7 +21,7 @@ func collectEnums(enums []XMLEnum, offset int) map[string][]EnumValue {
 				index = offset
 			}
 			result[enum.Name] = append(result[enum.Name], EnumValue{toCamelCase(name, true), index})
-			index += 1
+			index++
 		}
 	}
 

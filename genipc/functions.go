@@ -141,7 +141,6 @@ func collectFunctions(objects []XMLObject, offset int) []Function {
 				Return:    collectResultConsumer(method.ReturnValue),
 			})
 		}
-		objectID += 1
 	}
 
 	return functions
@@ -162,7 +161,7 @@ func collectRepeatables(objects []XMLObject, offset int, class int, prefix strin
 					Return:    collectResultConsumer(method.ReturnValue),
 				})
 			}
-			signalID += 1
+			signalID++
 		}
 	}
 

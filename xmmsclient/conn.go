@@ -96,7 +96,7 @@ func writeHeader(w io.Writer, hdr *header) error {
 }
 
 func (c *Client) nextSequenceNr() uint32 {
-	c.sequenceNr += 1
+	c.sequenceNr++
 	return c.sequenceNr
 }
 
