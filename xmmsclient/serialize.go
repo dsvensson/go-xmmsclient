@@ -104,9 +104,9 @@ func serializeColl(w io.Writer, coll XmmsColl) error {
 		return err
 	}
 
-	err = serializeAnyList(w, len(coll.IdList), TypeInt64,
+	err = serializeAnyList(w, len(coll.IDList), TypeInt64,
 		func(w io.Writer) error {
-			for _, id := range coll.IdList {
+			for _, id := range coll.IDList {
 				err := binary.Write(w, binary.BigEndian, id)
 				if err != nil {
 					return err

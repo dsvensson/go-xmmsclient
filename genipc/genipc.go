@@ -45,7 +45,7 @@ func (c *Client) {{.Name}}(
 		{{- if $index}}, {{end -}}
 		{{- $arg.Name}} {{$arg.Type -}}
 	{{end -}}) ({{.Return.Type}}, error) {
-	__reply := <-c.dispatch({{.ObjectId}}, {{.CommandId}}, XmmsList{
+	__reply := <-c.dispatch({{.ObjectID}}, {{.CommandID}}, XmmsList{
 	{{- range $index, $arg := .Args -}}
 		{{- if $index}}, {{end -}}
 		{{- if len $arg.XmmsType}}
@@ -81,7 +81,7 @@ import (
 {{range .}}
 // {{.Doc}}
 func (c *Client) {{.Name}}() ({{.Return.Type}}, error) {
-	__reply := <-c.dispatch(0, {{.ObjectId}}, XmmsList{XmmsInt({{- .CommandId -}})})
+	__reply := <-c.dispatch(0, {{.ObjectID}}, XmmsList{XmmsInt({{- .CommandID -}})})
 	if __reply.err != nil {
 		return {{.Return.Default}}, __reply.err
 	}
@@ -160,7 +160,7 @@ func (b *DictBroadcast) Next() (XmmsDict, error) {
 {{range .}}
 // {{.Doc}}
 func (c *Client) {{.Name}}() {{.Return.Name}}Broadcast {
-	__chan := c.dispatch(0, {{.ObjectId}}, XmmsList{XmmsInt({{- .CommandId -}})})
+	__chan := c.dispatch(0, {{.ObjectID}}, XmmsList{XmmsInt({{- .CommandID -}})})
 	return {{.Return.Name}}Broadcast{__chan}
 }
 {{end}}`

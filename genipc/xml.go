@@ -12,38 +12,38 @@ const (
 	ResultClassSignal
 )
 
-type XmlValueType []string
+type XMLValueType []string
 
-type XmlReturnValue struct {
+type XMLReturnValue struct {
 	Doc  string       `xml:"documentation"`
-	Type XmlValueType `xml:"type"`
+	Type XMLValueType `xml:"type"`
 }
 
-type XmlArgumentType struct {
+type XMLArgumentType struct {
 	Content string `xml:",innerxml"`
 }
 
-type XmlArgument struct {
+type XMLArgument struct {
 	Name string       `xml:"name"`
 	Doc  string       `xml:"documentation"`
-	Type XmlValueType `xml:"type"`
+	Type XMLValueType `xml:"type"`
 }
 
-type XmlMethod struct {
+type XMLMethod struct {
 	Name        string        `xml:"name"`
 	Doc         string        `xml:"documentation"`
-	Arguments   []XmlArgument `xml:"argument"`
+	Arguments   []XMLArgument `xml:"argument"`
 	ResultClass int
-	ReturnValue XmlReturnValue `xml:"return_value"`
+	ReturnValue XMLReturnValue `xml:"return_value"`
 }
 
-type XmlObject struct {
+type XMLObject struct {
 	Name       string
-	Methods    []XmlMethod
-	Broadcasts []XmlMethod
+	Methods    []XMLMethod
+	Broadcasts []XMLMethod
 }
 
-type XmlEnum struct {
+type XMLEnum struct {
 	Name    string   `xml:"name"`
 	Hint    string   `xml:"namespace-hint"`
 	Members []string `xml:"member"`
@@ -52,11 +52,11 @@ type XmlEnum struct {
 type Query struct {
 	IpcVersion int         `xml:"version,attr"`
 	Offset     int         `xml:"constant>value"`
-	Objects    []XmlObject `xml:"object"`
-	Enums      []XmlEnum   `xml:"enum"`
+	Objects    []XMLObject `xml:"object"`
+	Enums      []XMLEnum   `xml:"enum"`
 }
 
-func (c *XmlValueType) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+func (c *XMLValueType) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	var signature []string
 
 	done := false
@@ -86,8 +86,8 @@ func (c *XmlValueType) UnmarshalXML(d *xml.Decoder, start xml.StartElement) erro
 	return nil
 }
 
-func (obj *XmlObject) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	result := XmlObject{}
+func (obj *XMLObject) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	result := XMLObject{}
 
 	done := false
 	for !done {
@@ -102,15 +102,15 @@ func (obj *XmlObject) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error
 				d.DecodeElement(&result.Name, &elem)
 			}
 			if elem.Name.Local == "method" {
-				method := XmlMethod{ResultClass: ResultClassDefault}
+				method := XMLMethod{ResultClass: ResultClassDefault}
 				d.DecodeElement(&method, &elem)
 				result.Methods = append(result.Methods, method)
 			} else if elem.Name.Local == "broadcast" {
-				method := XmlMethod{ResultClass: ResultClassBroadcast}
+				method := XMLMethod{ResultClass: ResultClassBroadcast}
 				d.DecodeElement(&method, &elem)
 				result.Broadcasts = append(result.Broadcasts, method)
 			} else if elem.Name.Local == "signal" {
-				method := XmlMethod{ResultClass: ResultClassSignal}
+				method := XMLMethod{ResultClass: ResultClassSignal}
 				d.DecodeElement(&method, &elem)
 				result.Broadcasts = append(result.Broadcasts, method)
 			}

@@ -15,8 +15,8 @@ type context struct {
 }
 
 type header struct {
-	objectId   uint32
-	commandId  uint32
+	objectID   uint32
+	commandID  uint32
 	sequenceNr uint32
 	length     uint32
 }
@@ -48,12 +48,12 @@ type Client struct {
 func parseHeader(buf *bytes.Buffer) (*header, error) {
 	var hdr header
 
-	err := binary.Read(buf, binary.BigEndian, &hdr.objectId)
+	err := binary.Read(buf, binary.BigEndian, &hdr.objectID)
 	if err != nil {
 		return nil, err
 	}
 
-	err = binary.Read(buf, binary.BigEndian, &hdr.commandId)
+	err = binary.Read(buf, binary.BigEndian, &hdr.commandID)
 	if err != nil {
 		return nil, err
 	}
@@ -72,12 +72,12 @@ func parseHeader(buf *bytes.Buffer) (*header, error) {
 }
 
 func writeHeader(w io.Writer, hdr *header) error {
-	err := binary.Write(w, binary.BigEndian, hdr.objectId)
+	err := binary.Write(w, binary.BigEndian, hdr.objectID)
 	if err != nil {
 		return err
 	}
 
-	err = binary.Write(w, binary.BigEndian, hdr.commandId)
+	err = binary.Write(w, binary.BigEndian, hdr.commandID)
 	if err != nil {
 		return err
 	}
@@ -221,7 +221,7 @@ func (c *Client) router(inbound chan reply, outbound chan message, errors chan e
 	}
 }
 
-func (c *Client) dispatch(objectId uint32, commandId uint32, args XmmsValue) chan reply {
+func (c *Client) dispatch(objectID uint32, commandID uint32, args XmmsValue) chan reply {
 	c.RLock()
 	defer c.RUnlock()
 
@@ -231,10 +231,10 @@ func (c *Client) dispatch(objectId uint32, commandId uint32, args XmmsValue) cha
 	} else {
 		c.registry <- message{
 			header: header{
-				objectId:  objectId,
-				commandId: commandId,
+				objectID:  objectID,
+				commandID: commandID,
 			},
-			broadcast: objectId == 0,
+			broadcast: objectID == 0,
 			args:      args,
 			result:    result,
 		}
@@ -247,8 +247,8 @@ func (c *Client) sendHello() (int, error) {
 
 	c.registry <- message{
 		header: header{
-			objectId:  1,
-			commandId: 32,
+			objectID:  1,
+			commandID: 32,
 		},
 		broadcast: false,
 		args:      XmmsList{XmmsInt(IpcVersion), XmmsString(c.clientName)},
@@ -267,12 +267,12 @@ func (c *Client) sendHello() (int, error) {
 		return -1, err
 	}
 
-	clientId, ok := value.(XmmsInt)
+	clientID, ok := value.(XmmsInt)
 	if !ok {
 		return -1, errors.New("Bad reply from server")
 	}
 
-	return int(clientId), nil
+	return int(clientID), nil
 }
 
 func (c *Client) Dial(url string) (int, error) {
@@ -301,13 +301,13 @@ func (c *Client) Dial(url string) (int, error) {
 	go c.writer(conn, outbound, errors)
 	go c.router(inbound, outbound, errors)
 
-	clientId, err := c.sendHello()
+	clientID, err := c.sendHello()
 	if err != nil {
 		c.Close()
 		return -1, err
 	}
 
-	return clientId, nil
+	return clientID, nil
 }
 
 func (c *Client) Close() {

@@ -15,8 +15,8 @@ type Return struct {
 }
 
 type Function struct {
-	ObjectId       int
-	CommandId      int
+	ObjectID       int
+	CommandID      int
 	Name           string
 	Doc            string
 	Args           []Arg
@@ -45,7 +45,7 @@ func skip(object string, method string) bool {
 	return false
 }
 
-func collectArguments(arguments []XmlArgument) []Arg {
+func collectArguments(arguments []XMLArgument) []Arg {
 	var result []Arg
 
 	for _, entry := range arguments {
@@ -88,7 +88,7 @@ func collectArguments(arguments []XmlArgument) []Arg {
 	return result
 }
 
-func collectResultConsumer(signature XmlReturnValue) Return {
+func collectResultConsumer(signature XMLReturnValue) Return {
 	if len(signature.Type) == 0 {
 		// TODO: Deal with void functions.
 		return Return{Name: "Void", Type: "XmmsValue", Default: DefaultPtr}
@@ -125,54 +125,54 @@ func collectResultConsumer(signature XmlReturnValue) Return {
 	}
 }
 
-func collectFunctions(objects []XmlObject, offset int) []Function {
+func collectFunctions(objects []XMLObject, offset int) []Function {
 	var functions []Function
-	for objectId, obj := range objects {
-		for commandId, method := range obj.Methods {
+	for objectID, obj := range objects {
+		for commandID, method := range obj.Methods {
 			if skip(obj.Name, method.Name) {
 				continue
 			}
 			functions = append(functions, Function{
-				ObjectId:  objectId + 1,
-				CommandId: commandId + offset,
+				ObjectID:  objectID + 1,
+				CommandID: commandID + offset,
 				Name:      toCamelCase(obj.Name+"_"+method.Name, true),
 				Doc:       method.Doc,
 				Args:      collectArguments(method.Arguments),
 				Return:    collectResultConsumer(method.ReturnValue),
 			})
 		}
-		objectId += 1
+		objectID += 1
 	}
 
 	return functions
 }
 
-func collectRepeatables(objects []XmlObject, offset int, class int, prefix string) []Function {
+func collectRepeatables(objects []XMLObject, offset int, class int, prefix string) []Function {
 	var broadcasts []Function
 
-	signalId := 0
+	signalID := 0
 	for _, obj := range objects {
 		for _, method := range obj.Broadcasts {
 			if !skip(obj.Name, method.Name) && method.ResultClass == class {
 				broadcasts = append(broadcasts, Function{
-					ObjectId:  offset,
-					CommandId: signalId,
+					ObjectID:  offset,
+					CommandID: signalID,
 					Name:      prefix + toCamelCase(obj.Name+"_"+method.Name, true),
 					Doc:       method.Doc,
 					Return:    collectResultConsumer(method.ReturnValue),
 				})
 			}
-			signalId += 1
+			signalID += 1
 		}
 	}
 
 	return broadcasts
 }
 
-func collectSignals(objects []XmlObject, offset int) []Function {
+func collectSignals(objects []XMLObject, offset int) []Function {
 	return collectRepeatables(objects, offset, ResultClassSignal, "Signal")
 }
 
-func collectBroadcasts(objects []XmlObject, offset int) []Function {
+func collectBroadcasts(objects []XMLObject, offset int) []Function {
 	return collectRepeatables(objects, offset+1, ResultClassBroadcast, "Broadcast")
 }

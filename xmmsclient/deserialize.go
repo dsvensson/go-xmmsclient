@@ -152,7 +152,7 @@ func deserializeColl(r io.Reader) (result XmmsColl, err error) {
 
 	err = deserializeAnyList(r, func(raw XmmsValue) {
 		if value, ok := raw.(XmmsInt); ok {
-			result.IdList = append(result.IdList, int(value))
+			result.IDList = append(result.IDList, int(value))
 		}
 	})
 	if err != nil {

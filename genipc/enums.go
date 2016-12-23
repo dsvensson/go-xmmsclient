@@ -5,7 +5,7 @@ type EnumValue struct {
 	Value int
 }
 
-func collectEnums(enums []XmlEnum, offset int) map[string][]EnumValue {
+func collectEnums(enums []XMLEnum, offset int) map[string][]EnumValue {
 	result := make(map[string][](EnumValue))
 
 	for _, enum := range enums {

@@ -299,7 +299,7 @@ func TestDeserializeColl(t *testing.T) {
 		t.Fatal("wrong attributes count")
 	}
 
-	if len(coll.Operands[0].IdList) != 0 {
+	if len(coll.Operands[0].IDList) != 0 {
 		t.Fatal("wrong idlist size")
 	}
 

@@ -18,7 +18,7 @@ type XmmsColl struct {
 	Type       uint32
 	Operands   []XmmsColl
 	Attributes XmmsDict
-	IdList     []int
+	IDList     []int
 }
 
 func (i XmmsInt) isXmmsValue() {}
