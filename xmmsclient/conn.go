@@ -45,25 +45,25 @@ type Client struct {
 	registry         chan message
 }
 
-func parseHeader(buf *bytes.Buffer) (*header, error) {
+func parseHeader(r io.Reader) (*header, error) {
 	var hdr header
 
-	err := binary.Read(buf, binary.BigEndian, &hdr.objectID)
+	err := binary.Read(r, binary.BigEndian, &hdr.objectID)
 	if err != nil {
 		return nil, err
 	}
 
-	err = binary.Read(buf, binary.BigEndian, &hdr.commandID)
+	err = binary.Read(r, binary.BigEndian, &hdr.commandID)
 	if err != nil {
 		return nil, err
 	}
 
-	err = binary.Read(buf, binary.BigEndian, &hdr.sequenceNr)
+	err = binary.Read(r, binary.BigEndian, &hdr.sequenceNr)
 	if err != nil {
 		return nil, err
 	}
 
-	err = binary.Read(buf, binary.BigEndian, &hdr.length)
+	err = binary.Read(r, binary.BigEndian, &hdr.length)
 	if err != nil {
 		return nil, err
 	}
