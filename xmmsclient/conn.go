@@ -87,12 +87,7 @@ func writeHeader(w io.Writer, hdr *header) error {
 		return err
 	}
 
-	err = binary.Write(w, binary.BigEndian, hdr.length)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return binary.Write(w, binary.BigEndian, hdr.length)
 }
 
 func (c *Client) nextSequenceNr() uint32 {

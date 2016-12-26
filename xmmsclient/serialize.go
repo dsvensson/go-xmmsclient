@@ -22,12 +22,7 @@ func serializeString(w io.Writer, s []byte) error {
 		return err
 	}
 
-	err = binary.Write(w, binary.BigEndian, byte(0))
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return binary.Write(w, binary.BigEndian, byte(0))
 }
 
 func serializeAnyList(w io.Writer, length int, restrict uint32, producer listProducer) error {
@@ -119,7 +114,7 @@ func serializeColl(w io.Writer, coll XmmsColl) error {
 		return err
 	}
 
-	err = serializeAnyList(w, len(coll.Operands), TypeColl,
+	return serializeAnyList(w, len(coll.Operands), TypeColl,
 		func(w io.Writer) error {
 			for _, operand := range coll.Operands {
 				err := serializeColl(w, operand)
@@ -130,11 +125,6 @@ func serializeColl(w io.Writer, coll XmmsColl) error {
 			return nil
 		},
 	)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func serializeXmmsValue(w io.Writer, value XmmsValue) (err error) {
