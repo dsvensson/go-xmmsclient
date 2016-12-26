@@ -149,7 +149,7 @@ writer:
 				break writer
 			}
 
-			payload.WriteTo(w)
+			_, err = payload.WriteTo(w)
 			if err != nil {
 				errors <- err
 				break writer
