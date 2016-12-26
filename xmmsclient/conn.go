@@ -191,20 +191,20 @@ func (c *Client) router(inbound chan reply, outbound chan message, errors chan e
 				msg.broadcast,
 			}
 			outbound <- msg
-		case reply := <-inbound:
-			if reply.err != nil {
-				c.shutdownRouter(registry, reply.err)
+		case msg := <-inbound:
+			if msg.err != nil {
+				c.shutdownRouter(registry, msg.err)
 				return
 			}
 
-			ctx := registry[reply.sequenceNr]
+			ctx := registry[msg.sequenceNr]
 
 			go func() {
-				ctx.result <- reply
+				ctx.result <- msg
 			}()
 
 			if !ctx.broadcast {
-				delete(registry, reply.sequenceNr)
+				delete(registry, msg.sequenceNr)
 			}
 		case err := <-errors:
 			c.shutdownRouter(registry, err)
