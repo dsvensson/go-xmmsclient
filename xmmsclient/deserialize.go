@@ -32,7 +32,7 @@ func deserializeFloat(r io.Reader) (value XmmsFloat, err error) {
 	if mantissaInt > 0 {
 		mantissa = float64(mantissaInt) / float64(math.MaxInt32)
 	} else {
-		mantissa = float64(mantissaInt) / float64(math.Abs(math.MinInt32))
+		mantissa = float64(mantissaInt) / math.Abs(math.MinInt32)
 	}
 
 	value = XmmsFloat(math.Ldexp(mantissa, int(exponent)))
@@ -133,7 +133,7 @@ func deserializeDict(r io.Reader) (value XmmsDict, err error) {
 			return
 		}
 
-		dict[string(key)] = entry
+		dict[key] = entry
 	}
 	value = dict
 	return
