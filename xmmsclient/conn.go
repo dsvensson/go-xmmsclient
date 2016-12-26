@@ -250,12 +250,12 @@ func (c *Client) sendHello() (int, error) {
 		result:    result,
 	}
 
-	reply := <-result
-	if reply.err != nil {
-		return -1, reply.err
+	msg := <-result
+	if msg.err != nil {
+		return -1, msg.err
 	}
 
-	buffer := bytes.NewBuffer(reply.payload)
+	buffer := bytes.NewBuffer(msg.payload)
 
 	value, err := tryDeserialize(buffer)
 	if err != nil {
