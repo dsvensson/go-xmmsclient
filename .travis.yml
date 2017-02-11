@@ -10,5 +10,5 @@ before_install:
   - gometalinter --install
 
 script:
-  - gometalinter --disable golint --disable gocyclo xmmsclient
+  - gometalinter --disable golint --disable gocyclo --disable gas xmmsclient
   - $HOME/gopath/bin/goveralls -service=travis-ci -ignore=xmmsclient/auto*.go,genipc/*,examples/*/*
