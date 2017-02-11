@@ -72,7 +72,7 @@ func prettyPlayback(status xc.XmmsInt) {
 func main() {
 	client := xc.NewClient("hello-from-go")
 
-	clientId, err := client.Dial("localhost:xmms2")
+	clientId, err := client.Dial("localhost:9667")
 	if err != nil {
 		fmt.Println("Error(Dial):", err)
 		return
