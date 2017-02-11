@@ -6,6 +6,7 @@ go:
 before_install:
   - go get github.com/mattn/goveralls
   - go get github.com/alecthomas/gometalinter
+  - go get github.com/stretchr/testify
   - gometalinter --install
 
 script:
