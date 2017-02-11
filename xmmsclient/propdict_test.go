@@ -2,6 +2,8 @@ package xmmsclient
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestPropDictToDictGood(t *testing.T) {
@@ -13,18 +15,12 @@ func TestPropDictToDictGood(t *testing.T) {
 	}
 
 	dict, err := PropDictToDictDefault(propdict)
-	if err != nil {
-		t.Fatal("Error:", err)
-	}
-
-	if dict["artist"] != XmmsString("b") {
-		t.Fatal("Wrong match:", dict["artist"])
-	}
+	require.NoError(t, err)
+	require.Equal(t, XmmsString("b"), dict["artist"])
 }
 
 func TestPropDictToDictWrongTypes(t *testing.T) {
-	_, err := PropDictToDictDefault(XmmsDict{"foo": XmmsString("bar")})
-	if err == nil {
-		t.Fatal("Error:", err)
-	}
+	value, err := PropDictToDictDefault(XmmsDict{"foo": XmmsString("bar")})
+	require.Nil(t, value)
+	require.Error(t, err)
 }

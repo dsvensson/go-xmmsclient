@@ -2,16 +2,10 @@ package xmmsclient
 
 import (
 	"bytes"
-	"encoding/hex"
-	"reflect"
 	"testing"
-)
 
-func checkBuffer(t *testing.T, expected []byte, actual []byte) {
-	if !reflect.DeepEqual(expected, actual) {
-		t.Fatalf("\nwant:\n%s\nhave:\n%s", hex.Dump(expected), hex.Dump(actual))
-	}
-}
+	"github.com/stretchr/testify/require"
+)
 
 func TestSerializeInt(t *testing.T) {
 	expected := []byte{
@@ -21,11 +15,8 @@ func TestSerializeInt(t *testing.T) {
 	var buffer bytes.Buffer
 
 	err := serializeXmmsValue(&buffer, XmmsInt(42))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	checkBuffer(t, expected, buffer.Bytes())
+	require.NoError(t, err)
+	require.Equal(t, expected, buffer.Bytes())
 }
 
 func TestSerializeString(t *testing.T) {
@@ -37,11 +28,8 @@ func TestSerializeString(t *testing.T) {
 	var buffer bytes.Buffer
 
 	err := serializeXmmsValue(&buffer, XmmsString("test"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	checkBuffer(t, expected, buffer.Bytes())
+	require.NoError(t, err)
+	require.Equal(t, expected, buffer.Bytes())
 }
 
 func TestSerializeError(t *testing.T) {
@@ -53,11 +41,8 @@ func TestSerializeError(t *testing.T) {
 	var buffer bytes.Buffer
 
 	err := serializeXmmsValue(&buffer, XmmsError("test"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	checkBuffer(t, expected, buffer.Bytes())
+	require.NoError(t, err)
+	require.Equal(t, expected, buffer.Bytes())
 }
 
 func TestSerializeList(t *testing.T) {
@@ -74,11 +59,8 @@ func TestSerializeList(t *testing.T) {
 	var buffer bytes.Buffer
 
 	err := serializeXmmsValue(&buffer, XmmsList{XmmsInt(42), XmmsString("test")})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	checkBuffer(t, expected, buffer.Bytes())
+	require.NoError(t, err)
+	require.Equal(t, expected, buffer.Bytes())
 }
 
 func TestSerializeDict(t *testing.T) {
@@ -93,11 +75,8 @@ func TestSerializeDict(t *testing.T) {
 	var buffer bytes.Buffer
 
 	err := serializeXmmsValue(&buffer, XmmsDict{"int": XmmsInt(42)})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	checkBuffer(t, expected, buffer.Bytes())
+	require.NoError(t, err)
+	require.Equal(t, expected, buffer.Bytes())
 }
 
 func TestSerializeColl(t *testing.T) {
@@ -138,9 +117,6 @@ func TestSerializeColl(t *testing.T) {
 	}
 
 	err := serializeXmmsValue(&buffer, match)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	checkBuffer(t, expected, buffer.Bytes())
+	require.NoError(t, err)
+	require.Equal(t, expected, buffer.Bytes())
 }

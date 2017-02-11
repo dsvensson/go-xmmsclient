@@ -3,6 +3,8 @@ package xmmsclient
 import (
 	"bytes"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestDeserializeString(t *testing.T) {
@@ -13,14 +15,8 @@ func TestDeserializeString(t *testing.T) {
 	})
 
 	value, err := deserializeXmmsValue(buffer)
-	if err != nil {
-		t.Fatal("could not deserialize string")
-	}
-
-	string := value.(XmmsString)
-	if string != XmmsString("foo") {
-		t.Fatal("wrong string")
-	}
+	require.NoError(t, err)
+	require.Equal(t, XmmsString("foo"), value)
 }
 
 func TestDeserializeError(t *testing.T) {
@@ -31,14 +27,8 @@ func TestDeserializeError(t *testing.T) {
 	})
 
 	value, err := deserializeXmmsValue(buffer)
-	if err != nil {
-		t.Fatal("could not deserialize error")
-	}
-
-	error := value.(XmmsError)
-	if error != XmmsError("foo") {
-		t.Fatal("wrong error message")
-	}
+	require.NoError(t, err)
+	require.Equal(t, XmmsError("foo"), value)
 }
 
 /*
@@ -51,14 +41,10 @@ func TestDeserializeBindata(t *testing.T) {
 	})
 
 	value, err := deserializeXmmsValue(buffer)
-	if err != nil {
-		t.Fatal("could not deserialize bindata")
-	}
+	require.NoError(t, err)
 
 	bindata := value.(XmmsBindata)
-	if bindata != XmmsInt(42) {
-		t.Fatal("wrong bindata")
-	}
+	require.Equal(t, XmmsInt(42), bindata)
 }
 */
 
@@ -70,14 +56,8 @@ func TestDeserializeInt(t *testing.T) {
 	})
 
 	value, err := deserializeXmmsValue(buffer)
-	if err != nil {
-		t.Fatal("could not deserialize number")
-	}
-
-	number := value.(XmmsInt)
-	if number != XmmsInt(42) {
-		t.Fatal("wrong number")
-	}
+	require.NoError(t, err)
+	require.Equal(t, XmmsInt(42), value)
 }
 
 func TestDeserializeFloat(t *testing.T) {
@@ -88,16 +68,12 @@ func TestDeserializeFloat(t *testing.T) {
 	})
 
 	value, err := deserializeXmmsValue(buffer)
-	if err != nil {
-		t.Fatal("could not deserialize float")
-	}
+	require.NoError(t, err)
 
 	float := value.(XmmsFloat)
 
 	rounded := float64(int(float*10000)) / 10000.0
-	if rounded != float64(0.75) {
-		t.Fatal("wrong float", rounded)
-	}
+	require.Equal(t, float64(0.75), rounded)
 }
 
 func TestDeserializeList(t *testing.T) {
@@ -120,26 +96,13 @@ func TestDeserializeList(t *testing.T) {
 	})
 
 	value, err := deserializeXmmsValue(buffer)
-	if err != nil {
-		t.Fatal("could not deserialize number")
-	}
+	require.NoError(t, err)
 
 	list := value.(XmmsList)
-	if len(list) != 3 {
-		t.Fatal("wrong list size")
-	}
-
-	if list[0] != XmmsInt(42) {
-		t.Fatal("index 0 should be 42")
-	}
-
-	if list[1] != XmmsFloat(-1.) {
-		t.Fatal("index 1 should be -1.0")
-	}
-
-	if list[2] != XmmsString("foo") {
-		t.Fatal("index 1 should be -1.0")
-	}
+	require.Len(t, list, 3)
+	require.Equal(t, XmmsInt(42), list[0])
+	require.Equal(t, XmmsFloat(-1.), list[1])
+	require.Equal(t, XmmsString("foo"), list[2])
 }
 
 func TestDeserializeRestrictedList(t *testing.T) {
@@ -156,22 +119,12 @@ func TestDeserializeRestrictedList(t *testing.T) {
 	})
 
 	value, err := deserializeXmmsValue(buffer)
-	if err != nil {
-		t.Fatal("could not deserialize number")
-	}
+	require.NoError(t, err)
 
 	list := value.(XmmsList)
-	if len(list) != 2 {
-		t.Fatal("wrong list size")
-	}
-
-	if list[0] != XmmsInt(42) {
-		t.Fatal("index 0 should be 42")
-	}
-
-	if list[1] != XmmsInt(23) {
-		t.Fatal("index 1 should be 23")
-	}
+	require.Len(t, list, 2)
+	require.Equal(t, XmmsInt(42), list[0])
+	require.Equal(t, XmmsInt(23), list[1])
 }
 
 func TestDeserializeDict(t *testing.T) {
@@ -195,22 +148,12 @@ func TestDeserializeDict(t *testing.T) {
 	})
 
 	value, err := deserializeXmmsValue(buffer)
-	if err != nil {
-		t.Fatal("deserialization failed")
-	}
+	require.NoError(t, err)
 
 	dict := value.(XmmsDict)
-	if len(dict) != 2 {
-		t.Fatal("wrong attributes count")
-	}
-
-	if dict["foo"] != XmmsInt(42) {
-		t.Fatal("wrong attribute, seed != 31337")
-	}
-
-	if dict["bar"] != XmmsInt(9667) {
-		t.Fatal("wrong attribute, seed != 31337")
-	}
+	require.Len(t, dict, 2)
+	require.Equal(t, XmmsInt(42), dict["foo"])
+	require.Equal(t, XmmsInt(9667), dict["bar"])
 }
 
 func TestDeserializeColl(t *testing.T) {
@@ -261,50 +204,20 @@ func TestDeserializeColl(t *testing.T) {
 	})
 
 	value, err := deserializeXmmsValue(buffer)
-	if err != nil {
-		t.Fatal("deserialization failed")
-	}
+	require.NoError(t, err)
 
 	coll := value.(XmmsColl)
+	require.Equal(t, CollectionTypeMatch, int(coll.Type))
 
-	if coll.Type != CollectionTypeMatch {
-		t.Fatal("wrong collection type")
-	}
+	require.Len(t, coll.Attributes, 3)
+	require.Equal(t, XmmsInt(31337), coll.Attributes["seed"])
+	require.Equal(t, XmmsString("artist"), coll.Attributes["field"])
+	require.Equal(t, XmmsString("*sentenced*"), coll.Attributes["value"])
 
-	if len(coll.Attributes) != 3 {
-		t.Fatal("wrong attributes count")
-	}
+	require.Len(t, coll.Operands, 1)
+	require.Equal(t, CollectionTypeUniverse, int(coll.Operands[0].Type))
 
-	if coll.Attributes["seed"] != XmmsInt(31337) {
-		t.Fatal("wrong attribute, seed != 31337")
-	}
-
-	if coll.Attributes["field"] != XmmsString("artist") {
-		t.Fatal("wrong attribute, field != artist")
-	}
-
-	if coll.Attributes["value"] != XmmsString("*sentenced*") {
-		t.Fatal("wrong attribute, field != artist")
-	}
-
-	if len(coll.Operands) != 1 {
-		t.Fatal("wrong attributes count")
-	}
-
-	if coll.Operands[0].Type != CollectionTypeUniverse {
-		t.Fatal("wrong collection type")
-	}
-
-	if len(coll.Operands[0].Attributes) != 0 {
-		t.Fatal("wrong attributes count")
-	}
-
-	if len(coll.Operands[0].IDList) != 0 {
-		t.Fatal("wrong idlist size")
-	}
-
-	if len(coll.Operands[0].Operands) != 0 {
-		t.Fatal("wrong operands count")
-	}
-
+	require.Len(t, coll.Operands[0].Attributes, 0)
+	require.Len(t, coll.Operands[0].IDList, 0)
+	require.Len(t, coll.Operands[0].Operands, 0)
 }
