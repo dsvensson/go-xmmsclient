@@ -3,12 +3,30 @@ package xmmsclient
 import (
 	"encoding/binary"
 	"io"
+	"math"
 )
 
 type listProducer func(w io.Writer) error
 
 func serializeInt(w io.Writer, i XmmsInt) error {
 	return binary.Write(w, binary.BigEndian, i)
+}
+
+func splitFloat(v float64) (int32, int32) {
+	mant, exp := math.Frexp(v)
+	if v > 0 {
+		return int32(mant * math.MaxInt32), int32(exp)
+	}
+	return int32(mant * math.Abs(math.MinInt32)), int32(exp)
+}
+
+func serializeFloat(w io.Writer, i XmmsFloat) error {
+	mant, exp := splitFloat(float64(i))
+	err := binary.Write(w, binary.BigEndian, mant)
+	if err != nil {
+		return err
+	}
+	return binary.Write(w, binary.BigEndian, exp)
 }
 
 func serializeString(w io.Writer, s []byte) error {
@@ -133,6 +151,11 @@ func serializeXmmsValue(w io.Writer, value XmmsValue) (err error) {
 		err = binary.Write(w, binary.BigEndian, TypeInt64)
 		if err == nil {
 			return serializeInt(w, value.(XmmsInt))
+		}
+	case XmmsFloat:
+		err = binary.Write(w, binary.BigEndian, TypeFloat)
+		if err == nil {
+			return serializeFloat(w, value.(XmmsFloat))
 		}
 	case XmmsString:
 		err = binary.Write(w, binary.BigEndian, TypeString)
