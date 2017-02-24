@@ -234,7 +234,7 @@ func tryDeserializeList(r io.Reader, consumer listConsumer) error {
 }
 
 func tryDeserializeIntList(r io.Reader) ([]int, error) {
-	var list []int
+	list := []int{}
 	err := tryDeserializeList(r, func(raw XmmsValue) {
 		if value, ok := raw.(XmmsInt); ok {
 			list = append(list, int(value))
@@ -247,7 +247,7 @@ func tryDeserializeIntList(r io.Reader) ([]int, error) {
 }
 
 func tryDeserializeStringList(r io.Reader) ([]string, error) {
-	var list []string
+	list := []string{}
 	err := tryDeserializeList(r, func(raw XmmsValue) {
 		if value, ok := raw.(XmmsString); ok {
 			list = append(list, string(value))
@@ -260,7 +260,7 @@ func tryDeserializeStringList(r io.Reader) ([]string, error) {
 }
 
 func tryDeserializeDictList(r io.Reader) ([]XmmsDict, error) {
-	var list []XmmsDict
+	list := []XmmsDict{}
 	err := tryDeserializeList(r, func(raw XmmsValue) {
 		if value, ok := raw.(XmmsDict); ok {
 			list = append(list, value)
