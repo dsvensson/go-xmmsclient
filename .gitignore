@@ -1,5 +1,5 @@
-.coverage
-.idea
-glide.lock
-*.iml
-vendor
+/.coverage
+/.idea
+/*.iml
+/vendor
+/Gopkg.lock
