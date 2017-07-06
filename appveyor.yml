@@ -7,8 +7,8 @@ install:
   - go version
   - go env
   - go get github.com/jstemmer/go-junit-report
-  - go get github.com/stretchr/testify
-  - go get github.com/leanovate/gopter
+  - go get github.com/golang/dep/cmd/dep
+  - c:\gopath\bin\dep ensure
 
 build_script:
   - go test -v ./xmmsclient | c:\gopath\bin\go-junit-report > report.xml
