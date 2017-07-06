@@ -2,14 +2,33 @@ package xmmsclient
 
 import (
 	"encoding/binary"
+	"errors"
 	"io"
 	"math"
 )
 
-type listProducer func(w io.Writer) error
+type ioWriter func(w io.Writer) error
 
-func serializeInt(w io.Writer, i XmmsInt) error {
-	return binary.Write(w, binary.BigEndian, i)
+func write(data interface{}) ioWriter {
+	return func(w io.Writer) error {
+		return binary.Write(w, binary.BigEndian, data)
+	}
+}
+
+func compose(funs ...ioWriter) ioWriter {
+	return func(w io.Writer) error {
+		for _, fun := range funs {
+			err := fun(w)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func serializeInt(i XmmsInt) ioWriter {
+	return write(i)
 }
 
 func splitFloat(v float64) (int32, int32) {
@@ -20,48 +39,35 @@ func splitFloat(v float64) (int32, int32) {
 	return int32(mant * math.Abs(math.MinInt32)), int32(exp)
 }
 
-func serializeFloat(w io.Writer, i XmmsFloat) error {
+func serializeFloat(i XmmsFloat) ioWriter {
 	mant, exp := splitFloat(float64(i))
-	err := binary.Write(w, binary.BigEndian, mant)
-	if err != nil {
-		return err
-	}
-	return binary.Write(w, binary.BigEndian, exp)
+	return compose(
+		write(mant),
+		write(exp),
+	)
 }
 
-func serializeString(w io.Writer, s []byte) error {
-	err := binary.Write(w, binary.BigEndian, uint32(len(s)+1))
-	if err != nil {
-		return err
-	}
-
-	err = binary.Write(w, binary.BigEndian, s)
-	if err != nil {
-		return err
-	}
-
-	return binary.Write(w, binary.BigEndian, byte(0))
+func serializeString(s []byte) ioWriter {
+	return compose(
+		write(uint32(len(s)+1)),
+		write(s),
+		write(byte(0)),
+	)
 }
 
-func serializeAnyList(w io.Writer, length int, restrict uint32, producer listProducer) error {
-	err := binary.Write(w, binary.BigEndian, restrict)
-	if err != nil {
-		return err
-	}
-
-	err = binary.Write(w, binary.BigEndian, uint32(length))
-	if err != nil {
-		return err
-	}
-
-	return producer(w)
+func serializeAnyList(length int, restrict uint32, producer ioWriter) ioWriter {
+	return compose(
+		write(restrict),
+		write(uint32(length)),
+		producer,
+	)
 }
 
-func serializeList(w io.Writer, list XmmsList) error {
-	return serializeAnyList(w, len(list), TypeNone,
+func serializeList(list XmmsList) ioWriter {
+	return serializeAnyList(len(list), TypeNone,
 		func(w io.Writer) error {
 			for _, entry := range list {
-				err := serializeXmmsValue(w, entry)
+				err := serializeXmmsValue2(entry)(w)
 				if err != nil {
 					return err
 				}
@@ -71,11 +77,11 @@ func serializeList(w io.Writer, list XmmsList) error {
 	)
 }
 
-func serializeStringList(w io.Writer, list XmmsStrings) error {
-	return serializeAnyList(w, len(list), TypeNone,
+func serializeStringList(list XmmsStrings) ioWriter {
+	return serializeAnyList(len(list), TypeNone,
 		func(w io.Writer) error {
 			for _, entry := range list {
-				err := serializeXmmsValue(w, XmmsString(entry))
+				err := serializeXmmsValue2(XmmsString(entry))(w)
 				if err != nil {
 					return err
 				}
@@ -85,108 +91,92 @@ func serializeStringList(w io.Writer, list XmmsStrings) error {
 	)
 }
 
-func serializeDict(w io.Writer, dict XmmsDict) error {
-	err := binary.Write(w, binary.BigEndian, uint32(len(dict)))
-	if err != nil {
-		return err
-	}
-
-	for k, v := range dict {
-		err = serializeString(w, []byte(k))
+func serializeDict(dict XmmsDict) ioWriter {
+	return func(w io.Writer) error {
+		err := binary.Write(w, binary.BigEndian, uint32(len(dict)))
 		if err != nil {
 			return err
 		}
 
-		err = serializeXmmsValue(w, v)
-		if err != nil {
-			return err
+		for k, v := range dict {
+			err := compose(
+				serializeString([]byte(k)),
+				serializeXmmsValue2(v),
+			)(w)
+			if err != nil {
+				return err
+			}
 		}
-	}
 
-	return nil
+		return nil
+	}
 }
 
-func serializeColl(w io.Writer, coll XmmsColl) error {
-	err := binary.Write(w, binary.BigEndian, coll.Type)
-	if err != nil {
-		return err
-	}
-
-	err = serializeDict(w, coll.Attributes)
-	if err != nil {
-		return err
-	}
-
-	err = serializeAnyList(w, len(coll.IDList), TypeInt64,
-		func(w io.Writer) error {
-			for _, id := range coll.IDList {
-				innerErr := binary.Write(w, binary.BigEndian, int64(id))
-				if innerErr != nil {
-					return innerErr
-				}
+func serializeIdList(ids []int) ioWriter {
+	return func(w io.Writer) error {
+		for _, id := range ids {
+			err := serializeInt(XmmsInt(id))(w)
+			if err != nil {
+				return err
 			}
-			return nil
-		},
-	)
-	if err != nil {
-		return err
+		}
+		return nil
 	}
+}
 
-	return serializeAnyList(w, len(coll.Operands), TypeColl,
-		func(w io.Writer) error {
-			for _, operand := range coll.Operands {
-				innerErr := serializeColl(w, operand)
-				if innerErr != nil {
-					return innerErr
-				}
+func serializeOperands(operands []XmmsColl) ioWriter {
+	return func(w io.Writer) error {
+		for _, operand := range operands {
+			err := serializeColl(operand)(w)
+			if err != nil {
+				return err
 			}
-			return nil
-		},
+		}
+		return nil
+	}
+}
+
+func serializeColl(coll XmmsColl) ioWriter {
+	return compose(
+		write(coll.Type),
+		serializeDict(coll.Attributes),
+		serializeAnyList(len(coll.IDList), TypeInt64, serializeIdList(coll.IDList)),
+		serializeAnyList(len(coll.Operands), TypeColl, serializeOperands(coll.Operands)),
 	)
 }
 
-func serializeXmmsValue(w io.Writer, value XmmsValue) (err error) {
+func serializeXmmsValue2(value XmmsValue) ioWriter {
+	var typ uint32
+	var serializer ioWriter
+
 	switch value.(type) {
 	case XmmsInt:
-		err = binary.Write(w, binary.BigEndian, TypeInt64)
-		if err == nil {
-			return serializeInt(w, value.(XmmsInt))
-		}
+		typ, serializer = TypeInt64, serializeInt(value.(XmmsInt))
 	case XmmsFloat:
-		err = binary.Write(w, binary.BigEndian, TypeFloat)
-		if err == nil {
-			return serializeFloat(w, value.(XmmsFloat))
-		}
+		typ, serializer = TypeFloat, serializeFloat(value.(XmmsFloat))
 	case XmmsString:
-		err = binary.Write(w, binary.BigEndian, TypeString)
-		if err == nil {
-			return serializeString(w, []byte(value.(XmmsString)))
-		}
+		typ, serializer = TypeString, serializeString([]byte(value.(XmmsString)))
 	case XmmsError:
-		err = binary.Write(w, binary.BigEndian, TypeError)
-		if err == nil {
-			return serializeString(w, []byte(value.(XmmsError)))
-		}
+		typ, serializer = TypeError, serializeString([]byte(value.(XmmsError)))
 	case XmmsDict:
-		err = binary.Write(w, binary.BigEndian, TypeDict)
-		if err == nil {
-			return serializeDict(w, value.(XmmsDict))
-		}
+		typ, serializer = TypeDict, serializeDict(value.(XmmsDict))
 	case XmmsList:
-		err = binary.Write(w, binary.BigEndian, TypeList)
-		if err == nil {
-			return serializeList(w, value.(XmmsList))
-		}
+		typ, serializer = TypeList, serializeList(value.(XmmsList))
 	case XmmsStrings:
-		err = binary.Write(w, binary.BigEndian, TypeList)
-		if err == nil {
-			return serializeStringList(w, value.(XmmsStrings))
-		}
+		typ, serializer = TypeList, serializeStringList(value.(XmmsStrings))
 	case XmmsColl:
-		err = binary.Write(w, binary.BigEndian, TypeColl)
-		if err == nil {
-			return serializeColl(w, value.(XmmsColl))
+		typ, serializer = TypeColl, serializeColl(value.(XmmsColl))
+	default:
+		return func(w io.Writer) error {
+			return errors.New("Unknown type")
 		}
 	}
-	return nil
+	return compose(
+		write(typ),
+		serializer,
+	)
+}
+
+func serializeXmmsValue(w io.Writer, value XmmsValue) error {
+	return serializeXmmsValue2(value)(w)
 }
