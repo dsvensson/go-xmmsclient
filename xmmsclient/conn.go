@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"sync"
@@ -43,6 +44,10 @@ type Client struct {
 	shutdownRegistry chan bool
 	shutdownIO       chan bool
 	registry         chan message
+}
+
+func (h *header) String() string {
+	return fmt.Sprintf("Header{Obj: %v, Cmd: %v, Seq: %v, Len: %v}", h.objectID, h.commandID, h.sequenceNr, h.length)
 }
 
 func parseHeader(r io.Reader) (*header, error) {
